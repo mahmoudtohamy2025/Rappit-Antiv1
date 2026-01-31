@@ -771,7 +771,8 @@ startxref
       services.push({
         serviceCode: 'II', // Insurance
         value: options.insurance,
-        currency: 'USD',
+        // Use configurable currency when provided, default to USD for backward compatibility
+        currency: (options as any)?.currency || 'USD',
       });
     }
 
