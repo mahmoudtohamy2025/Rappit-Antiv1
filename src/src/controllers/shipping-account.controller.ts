@@ -10,6 +10,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { PrismaService } from '@common/database/prisma.service';
@@ -33,6 +34,8 @@ import { encrypt, decrypt } from '@helpers/encryption';
 @Controller('shipping-accounts')
 @UseGuards(AuthGuard)
 export class ShippingAccountController {
+  private readonly logger = new Logger(ShippingAccountController.name);
+
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -301,17 +304,164 @@ export class ShippingAccountController {
       };
     }
 
-    // TODO: Implement actual connection test with carrier API
-    // For MVP, return mock success
+    // Test connection with actual carrier API
+    if (account.carrierType === 'DHL') {
+      return this.testDHLConnection(account);
+    } else if (account.carrierType === 'FEDEX') {
+      return this.testFedExConnection(account);
+    }
+
     return {
-      success: true,
-      data: {
-        connected: true,
-        message: 'Connection test successful (mock)',
-        carrier: account.carrierType,
-        testMode: account.testMode,
+      success: false,
+      error: {
+        code: 'UNSUPPORTED_CARRIER',
+        message: `Carrier type ${account.carrierType} not supported`,
       },
     };
+  }
+
+  /**
+   * Test DHL connection with actual API call
+   */
+  private async testDHLConnection(account: any) {
+    try {
+      // Decrypt credentials
+      const credentials = JSON.parse(decrypt(account.credentials));
+
+      if (!credentials.apiKey || !credentials.apiSecret) {
+        return {
+          success: false,
+          error: {
+            code: 'MISSING_CREDENTIALS',
+            message: 'DHL credentials incomplete',
+          },
+        };
+      }
+
+      // Make actual API call to DHL
+      // Using DHL's account validation endpoint or a lightweight endpoint
+      const apiUrl = account.testMode
+        ? 'https://express.api.dhl.com/mydhlapi/test'
+        : 'https://express.api.dhl.com/mydhlapi';
+
+      const response = await fetch(`${apiUrl}/accounts/validate`, {
+        method: 'GET',
+        headers: {
+          'DHL-API-Key': credentials.apiKey,
+          Authorization: `Basic ${Buffer.from(`${credentials.apiKey}:${credentials.apiSecret}`).toString('base64')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          success: true,
+          data: {
+            connected: true,
+            message: 'DHL connection successful',
+            carrier: 'DHL',
+            testMode: account.testMode,
+            accountNumber: credentials.accountNumber || 'N/A',
+          },
+        };
+      } else {
+        const errorText = await response.text();
+        this.logger.error(
+          `DHL connection test failed: ${response.status} - ${errorText}`,
+        );
+        return {
+          success: false,
+          error: {
+            code: 'CONNECTION_FAILED',
+            message: `DHL connection failed: ${response.status} ${response.statusText}`,
+          },
+        };
+      }
+    } catch (error) {
+      this.logger.error(`DHL connection test error: ${error.message}`);
+      return {
+        success: false,
+        error: {
+          code: 'CONNECTION_ERROR',
+          message: `Connection error: ${error.message}`,
+        },
+      };
+    }
+  }
+
+  /**
+   * Test FedEx connection with actual API call
+   */
+  private async testFedExConnection(account: any) {
+    try {
+      // Decrypt credentials
+      const credentials = JSON.parse(decrypt(account.credentials));
+
+      if (!credentials.apiKey || !credentials.apiSecret) {
+        return {
+          success: false,
+          error: {
+            code: 'MISSING_CREDENTIALS',
+            message: 'FedEx credentials incomplete',
+          },
+        };
+      }
+
+      // Make actual API call to FedEx OAuth endpoint first
+      const apiUrl = account.testMode
+        ? 'https://apis-sandbox.fedex.com'
+        : 'https://apis.fedex.com';
+
+      // Test OAuth authentication
+      const authResponse = await fetch(`${apiUrl}/oauth/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'client_credentials',
+          client_id: credentials.apiKey,
+          client_secret: credentials.apiSecret,
+        }).toString(),
+      });
+
+      if (authResponse.ok) {
+        const authData = await authResponse.json();
+        return {
+          success: true,
+          data: {
+            connected: true,
+            message: 'FedEx connection successful',
+            carrier: 'FEDEX',
+            testMode: account.testMode,
+            accountNumber: credentials.accountNumber || 'N/A',
+            tokenReceived: !!authData.access_token,
+          },
+        };
+      } else {
+        const errorText = await authResponse.text();
+        this.logger.error(
+          `FedEx connection test failed: ${authResponse.status} - ${errorText}`,
+        );
+        return {
+          success: false,
+          error: {
+            code: 'CONNECTION_FAILED',
+            message: `FedEx connection failed: ${authResponse.status} ${authResponse.statusText}`,
+          },
+        };
+      }
+    } catch (error) {
+      this.logger.error(`FedEx connection test error: ${error.message}`);
+      return {
+        success: false,
+        error: {
+          code: 'CONNECTION_ERROR',
+          message: `Connection error: ${error.message}`,
+        },
+      };
+    }
   }
 
   // ============================================================================

@@ -354,8 +354,6 @@ export class ChannelConnectionService {
    * @param channelId - Channel ID
    * @param organizationId - Organization ID
    * @returns Test result
-   * 
-   * TODO: Implement actual API validation calls
    */
   async testConnection(
     channelId: string,
@@ -366,42 +364,130 @@ export class ChannelConnectionService {
     const channel = await this.getConnection(channelId, organizationId);
     const credentials = this.decryptCredentials(channel.config);
 
-    // TODO: Implement actual API test based on channel type
-    // For Shopify: GET /admin/api/2024-01/shop.json
-    // For WooCommerce: GET /wp-json/wc/v3/system_status
-
     if (channel.type === 'SHOPIFY') {
-      // TODO: Test Shopify connection
-      // const response = await axios.get(
-      //   `https://${credentials.shopDomain}/admin/api/2024-01/shop.json`,
-      //   {
-      //     headers: {
-      //       'X-Shopify-Access-Token': credentials.accessToken,
-      //     },
-      //   },
-      // );
-      //
-      // return {
-      //   success: response.status === 200,
-      //   message: 'Connected to Shopify successfully',
-      // };
-
-      return {
-        success: true,
-        message: 'Shopify connection test not implemented (stub)',
-      };
+      return this.testShopifyConnection(credentials);
     } else if (channel.type === 'WOOCOMMERCE') {
-      // TODO: Test WooCommerce connection
-      return {
-        success: true,
-        message: 'WooCommerce connection test not implemented (stub)',
-      };
+      return this.testWooCommerceConnection(credentials);
     }
 
     return {
       success: false,
       message: 'Unknown channel type',
     };
+  }
+
+  /**
+   * Test Shopify connection with actual API call
+   */
+  private async testShopifyConnection(
+    credentials: Record<string, any>,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const shopDomain = credentials.shopDomain;
+      const accessToken = credentials.accessToken;
+
+      if (!shopDomain || !accessToken) {
+        return {
+          success: false,
+          message: 'Missing Shopify credentials',
+        };
+      }
+
+      // Make actual API call to Shopify
+      const response = await fetch(
+        `https://${shopDomain}/admin/api/2024-01/shop.json`,
+        {
+          method: 'GET',
+          headers: {
+            'X-Shopify-Access-Token': accessToken,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          success: true,
+          message: `Connected to Shopify store: ${data.shop?.name || shopDomain}`,
+        };
+      } else {
+        const errorText = await response.text();
+        this.logger.error(
+          `Shopify connection test failed: ${response.status} - ${errorText}`,
+        );
+        return {
+          success: false,
+          message: `Shopify connection failed: ${response.status} ${response.statusText}`,
+        };
+      }
+    } catch (error) {
+      this.logger.error(`Shopify connection test error: ${error.message}`);
+      return {
+        success: false,
+        message: `Connection error: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * Test WooCommerce connection with actual API call
+   */
+  private async testWooCommerceConnection(
+    credentials: Record<string, any>,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const siteUrl = credentials.siteUrl;
+      const consumerKey = credentials.consumerKey;
+      const consumerSecret = credentials.consumerSecret;
+
+      if (!siteUrl || !consumerKey || !consumerSecret) {
+        return {
+          success: false,
+          message: 'Missing WooCommerce credentials',
+        };
+      }
+
+      // Create Basic Auth header
+      const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString(
+        'base64',
+      );
+
+      // Make actual API call to WooCommerce
+      const response = await fetch(
+        `${siteUrl}/wp-json/wc/v3/system_status`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Basic ${auth}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          success: true,
+          message: `Connected to WooCommerce site: ${data.environment?.site_url || siteUrl}`,
+        };
+      } else {
+        const errorText = await response.text();
+        this.logger.error(
+          `WooCommerce connection test failed: ${response.status} - ${errorText}`,
+        );
+        return {
+          success: false,
+          message: `WooCommerce connection failed: ${response.status} ${response.statusText}`,
+        };
+      }
+    } catch (error) {
+      this.logger.error(`WooCommerce connection test error: ${error.message}`);
+      return {
+        success: false,
+        message: `Connection error: ${error.message}`,
+      };
+    }
   }
 
   /**
