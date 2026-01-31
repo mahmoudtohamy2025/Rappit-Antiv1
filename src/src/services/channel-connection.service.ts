@@ -354,54 +354,315 @@ export class ChannelConnectionService {
    * @param channelId - Channel ID
    * @param organizationId - Organization ID
    * @returns Test result
-   * 
-   * TODO: Implement actual API validation calls
    */
   async testConnection(
     channelId: string,
     organizationId: string,
-  ): Promise<{ success: boolean; message: string }> {
+  ): Promise<{ success: boolean; message: string; details?: any }> {
     this.logger.log(`Testing connection: ${channelId}`);
 
     const channel = await this.getConnection(channelId, organizationId);
     const credentials = this.decryptCredentials(channel.config);
 
-    // TODO: Implement actual API test based on channel type
-    // For Shopify: GET /admin/api/2024-01/shop.json
-    // For WooCommerce: GET /wp-json/wc/v3/system_status
-
     if (channel.type === 'SHOPIFY') {
-      // TODO: Test Shopify connection
-      // const response = await axios.get(
-      //   `https://${credentials.shopDomain}/admin/api/2024-01/shop.json`,
-      //   {
-      //     headers: {
-      //       'X-Shopify-Access-Token': credentials.accessToken,
-      //     },
-      //   },
-      // );
-      //
-      // return {
-      //   success: response.status === 200,
-      //   message: 'Connected to Shopify successfully',
-      // };
-
-      return {
-        success: true,
-        message: 'Shopify connection test not implemented (stub)',
-      };
+      return this.testShopifyConnection(credentials);
     } else if (channel.type === 'WOOCOMMERCE') {
-      // TODO: Test WooCommerce connection
-      return {
-        success: true,
-        message: 'WooCommerce connection test not implemented (stub)',
-      };
+      return this.testWooCommerceConnection(credentials);
     }
 
     return {
       success: false,
       message: 'Unknown channel type',
     };
+  }
+
+  /**
+   * Test Shopify connection with real API call
+   * 
+   * Makes a GET request to /admin/api/2024-01/shop.json to validate credentials.
+   * 
+   * @param credentials - Decrypted Shopify credentials
+   * @returns Test result with shop details on success
+   */
+  private async testShopifyConnection(
+    credentials: Record<string, any>,
+  ): Promise<{ success: boolean; message: string; details?: any }> {
+    const { shopDomain, accessToken } = credentials;
+
+    if (!shopDomain || !accessToken) {
+      return {
+        success: false,
+        message: 'Missing Shopify credentials (shopDomain or accessToken)',
+      };
+    }
+
+    const apiVersion = '2024-01';
+    const url = `https://${shopDomain}/admin/api/${apiVersion}/shop.json`;
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (response.ok) {
+        const data = await response.json();
+        this.logger.log(`Shopify connection successful for ${shopDomain}`);
+        return {
+          success: true,
+          message: 'Connected to Shopify successfully',
+          details: {
+            shopName: data.shop?.name,
+            shopDomain: data.shop?.domain,
+            email: data.shop?.email,
+            currency: data.shop?.currency,
+            timezone: data.shop?.timezone,
+          },
+        };
+      }
+
+      // Handle specific error codes
+      if (response.status === 401) {
+        return {
+          success: false,
+          message: 'Authentication failed: Invalid access token',
+        };
+      }
+
+      if (response.status === 403) {
+        return {
+          success: false,
+          message: 'Authorization failed: Access token does not have required permissions',
+        };
+      }
+
+      if (response.status === 404) {
+        return {
+          success: false,
+          message: 'Shop not found: Invalid shop domain',
+        };
+      }
+
+      return {
+        success: false,
+        message: `Shopify API error: HTTP ${response.status}`,
+      };
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        return {
+          success: false,
+          message: 'Connection timeout: Shopify API did not respond in time',
+        };
+      }
+
+      this.logger.error(`Shopify connection test failed: ${error.message}`);
+      return {
+        success: false,
+        message: `Connection failed: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * Test WooCommerce connection with real API call
+   * 
+   * Makes a GET request to /wp-json/wc/v3/system_status to validate credentials.
+   * Uses OAuth1 signature for authentication.
+   * 
+   * @param credentials - Decrypted WooCommerce credentials
+   * @returns Test result with system status on success
+   */
+  private async testWooCommerceConnection(
+    credentials: Record<string, any>,
+  ): Promise<{ success: boolean; message: string; details?: any }> {
+    const { siteUrl, consumerKey, consumerSecret } = credentials;
+
+    if (!siteUrl || !consumerKey || !consumerSecret) {
+      return {
+        success: false,
+        message: 'Missing WooCommerce credentials (siteUrl, consumerKey, or consumerSecret)',
+      };
+    }
+
+    // Normalize site URL
+    const baseUrl = siteUrl.replace(/\/$/, '');
+    const endpoint = `${baseUrl}/wp-json/wc/v3/system_status`;
+
+    try {
+      // WooCommerce can use either OAuth1 or Basic Auth depending on SSL
+      // For HTTPS, we can use Basic Auth which is simpler and works reliably
+      const isHttps = baseUrl.startsWith('https://');
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+      let response: Response;
+
+      if (isHttps) {
+        // Use Basic Auth for HTTPS
+        const authString = Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64');
+        response = await fetch(endpoint, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Basic ${authString}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          signal: controller.signal,
+        });
+      } else {
+        // Use OAuth1 for HTTP
+        const oauthParams = this.createWooCommerceOAuth1Params(
+          'GET',
+          endpoint,
+          consumerKey,
+          consumerSecret,
+        );
+
+        const urlWithOAuth = new URL(endpoint);
+        Object.entries(oauthParams).forEach(([key, value]) => {
+          urlWithOAuth.searchParams.append(key, value);
+        });
+
+        response = await fetch(urlWithOAuth.toString(), {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          signal: controller.signal,
+        });
+      }
+
+      clearTimeout(timeout);
+
+      if (response.ok) {
+        const data = await response.json();
+        this.logger.log(`WooCommerce connection successful for ${siteUrl}`);
+        return {
+          success: true,
+          message: 'Connected to WooCommerce successfully',
+          details: {
+            environment: {
+              homeUrl: data.environment?.home_url,
+              siteUrl: data.environment?.site_url,
+              wcVersion: data.environment?.version,
+              wpVersion: data.environment?.wp_version,
+            },
+          },
+        };
+      }
+
+      // Handle specific error codes
+      if (response.status === 401) {
+        return {
+          success: false,
+          message: 'Authentication failed: Invalid consumer key or secret',
+        };
+      }
+
+      if (response.status === 403) {
+        return {
+          success: false,
+          message: 'Authorization failed: API key does not have required permissions',
+        };
+      }
+
+      if (response.status === 404) {
+        return {
+          success: false,
+          message: 'WooCommerce REST API not found: Check if WooCommerce is installed and REST API is enabled',
+        };
+      }
+
+      return {
+        success: false,
+        message: `WooCommerce API error: HTTP ${response.status}`,
+      };
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        return {
+          success: false,
+          message: 'Connection timeout: WooCommerce API did not respond in time',
+        };
+      }
+
+      this.logger.error(`WooCommerce connection test failed: ${error.message}`);
+      return {
+        success: false,
+        message: `Connection failed: ${error.message}`,
+      };
+    }
+  }
+
+  /**
+   * Create OAuth1 parameters for WooCommerce (HTTP only)
+   * 
+   * @param method - HTTP method
+   * @param url - Full URL
+   * @param consumerKey - Consumer key
+   * @param consumerSecret - Consumer secret
+   * @returns OAuth1 parameters including signature
+   */
+  private createWooCommerceOAuth1Params(
+    method: string,
+    url: string,
+    consumerKey: string,
+    consumerSecret: string,
+  ): Record<string, string> {
+    const oauthParams: Record<string, string> = {
+      oauth_consumer_key: consumerKey,
+      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+      oauth_nonce: crypto.randomBytes(16).toString('hex'),
+      oauth_signature_method: 'HMAC-SHA256',
+      oauth_version: '1.0',
+    };
+
+    // Parse URL
+    const urlObj = new URL(url);
+    const baseUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
+
+    // Collect all parameters
+    const allParams: Record<string, string> = { ...oauthParams };
+    urlObj.searchParams.forEach((value, key) => {
+      allParams[key] = value;
+    });
+
+    // Create parameter string (sorted alphabetically)
+    const sortedKeys = Object.keys(allParams).sort();
+    const parameterString = sortedKeys
+      .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(allParams[key])}`)
+      .join('&');
+
+    // Create signature base string
+    const signatureBaseString = [
+      method.toUpperCase(),
+      encodeURIComponent(baseUrl),
+      encodeURIComponent(parameterString),
+    ].join('&');
+
+    // Create signing key
+    const signingKey = `${encodeURIComponent(consumerSecret)}&`;
+
+    // Generate signature
+    const signature = crypto
+      .createHmac('sha256', signingKey)
+      .update(signatureBaseString)
+      .digest('base64');
+
+    oauthParams.oauth_signature = signature;
+
+    return oauthParams;
   }
 
   /**
