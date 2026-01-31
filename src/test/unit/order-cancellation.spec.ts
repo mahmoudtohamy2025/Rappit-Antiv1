@@ -325,7 +325,7 @@ describe('OrderCancellationService', () => {
                     organizationId: testOrgId,
                     reason: CancellationReason.CUSTOMER_REQUEST,
                 })
-            ).rejects.toThrow();
+            ).rejects.toThrow(/inventory|release|failed/i);
 
             // Order status should not be updated if inventory release fails
             expect(prisma.order.update).not.toHaveBeenCalled();
@@ -540,7 +540,7 @@ describe('OrderCancellationService', () => {
                     organizationId: testOrgId,
                     reason: CancellationReason.CUSTOMER_REQUEST,
                 })
-            ).rejects.toThrow();
+            ).rejects.toThrow(/DB connection failed/);
         });
     });
 });

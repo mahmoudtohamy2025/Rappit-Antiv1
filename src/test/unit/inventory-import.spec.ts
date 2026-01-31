@@ -760,26 +760,26 @@ SKU-001,200,${testWarehouseId}`;
     describe('edge cases', () => {
         it('should handle null content', async () => {
             await expect(service.importFromCSV(null as any, createImportOptions()))
-                .rejects.toThrow();
+                .rejects.toThrow(/null|undefined|content|required/i);
         });
 
         it('should handle undefined content', async () => {
             await expect(service.importFromCSV(undefined as any, createImportOptions()))
-                .rejects.toThrow();
+                .rejects.toThrow(/null|undefined|content|required/i);
         });
 
         it('should handle missing organizationId', async () => {
             const options = { ...createImportOptions(), organizationId: '' };
 
             await expect(service.importFromCSV(validCSVContent, options))
-                .rejects.toThrow();
+                .rejects.toThrow(/organization|required|invalid/i);
         });
 
         it('should handle missing userId', async () => {
             const options = { ...createImportOptions(), userId: '' };
 
             await expect(service.importFromCSV(validCSVContent, options))
-                .rejects.toThrow();
+                .rejects.toThrow(/user|required|invalid/i);
         });
 
         it('should handle single row file', async () => {
