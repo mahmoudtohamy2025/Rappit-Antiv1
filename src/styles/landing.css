@@ -1,0 +1,797 @@
+/* RAPPIT Landing Page Styles */
+/* Inspired by Stripe, Linear, Shopify - Enterprise-grade aesthetics */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* =====================================================
+   CSS CUSTOM PROPERTIES (Design Tokens)
+   ===================================================== */
+:root {
+  /* Primary Colors - Professional Blue/Slate */
+  --landing-primary: #2563eb;
+  --landing-primary-hover: #1d4ed8;
+  --landing-primary-light: #3b82f6;
+  
+  /* Neutral Colors - Dark Theme */
+  --landing-bg-dark: #0a0a0f;
+  --landing-bg-section: #0f0f14;
+  --landing-bg-card: #16161d;
+  --landing-bg-elevated: #1c1c24;
+  
+  /* Text Colors */
+  --landing-text-primary: #f8fafc;
+  --landing-text-secondary: #94a3b8;
+  --landing-text-muted: #64748b;
+  --landing-text-accent: #60a5fa;
+  
+  /* Border & Dividers */
+  --landing-border: rgba(255, 255, 255, 0.08);
+  --landing-border-hover: rgba(255, 255, 255, 0.15);
+  
+  /* Gradients */
+  --landing-gradient-hero: linear-gradient(135deg, #1e3a5f 0%, #0f172a 50%, #0a0a0f 100%);
+  --landing-gradient-card: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0) 100%);
+  --landing-gradient-cta: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+  
+  /* Shadows */
+  --landing-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --landing-shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --landing-shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+  --landing-shadow-glow: 0 0 60px rgba(37, 99, 235, 0.3);
+  
+  /* Spacing */
+  --landing-section-padding: 6rem;
+  --landing-container-max: 1200px;
+  
+  /* Typography */
+  --landing-font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  /* Transitions */
+  --landing-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* =====================================================
+   BASE STYLES
+   ===================================================== */
+.landing-page {
+  font-family: var(--landing-font);
+  background-color: var(--landing-bg-dark);
+  color: var(--landing-text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.landing-page * {
+  box-sizing: border-box;
+}
+
+.landing-container {
+  max-width: var(--landing-container-max);
+  margin: 0 auto;
+  padding-inline: 1.5rem;
+}
+
+/* =====================================================
+   TYPOGRAPHY
+   ===================================================== */
+.landing-h1 {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--landing-text-primary);
+}
+
+.landing-h2 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--landing-text-primary);
+}
+
+.landing-h3 {
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--landing-text-primary);
+}
+
+.landing-subtitle {
+  font-size: clamp(1.125rem, 2vw, 1.375rem);
+  color: var(--landing-text-secondary);
+  line-height: 1.6;
+  max-width: 48rem;
+}
+
+.landing-body {
+  font-size: 1rem;
+  color: var(--landing-text-secondary);
+  line-height: 1.7;
+}
+
+.landing-caption {
+  font-size: 0.875rem;
+  color: var(--landing-text-muted);
+  line-height: 1.5;
+}
+
+/* =====================================================
+   BUTTONS
+   ===================================================== */
+.landing-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: var(--landing-transition);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.landing-btn-primary {
+  background: var(--landing-gradient-cta);
+  color: white;
+  box-shadow: var(--landing-shadow-sm), var(--landing-shadow-glow);
+}
+
+.landing-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--landing-shadow-md), 0 0 80px rgba(37, 99, 235, 0.4);
+}
+
+.landing-btn-secondary {
+  background: transparent;
+  color: var(--landing-text-primary);
+  border: 1px solid var(--landing-border-hover);
+}
+
+.landing-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* =====================================================
+   SECTION: HERO
+   ===================================================== */
+.landing-hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  padding: var(--landing-section-padding) 0;
+  background: var(--landing-gradient-hero);
+  overflow: hidden;
+}
+
+.landing-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 70% 30%, rgba(37, 99, 235, 0.15) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.landing-hero-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 56rem;
+  margin: 0 auto;
+}
+
+.landing-hero-headline {
+  margin-bottom: 1.5rem;
+}
+
+.landing-hero-subheadline {
+  margin-bottom: 1rem;
+}
+
+.landing-hero-supporting {
+  margin-bottom: 2.5rem;
+}
+
+.landing-hero-ctas {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.landing-hero-visual {
+  position: absolute;
+  inset: 0;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Abstract grid pattern */
+.landing-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+/* =====================================================
+   SECTION: TRUST STRIP
+   ===================================================== */
+.landing-trust {
+  background: var(--landing-bg-section);
+  border-block: 1px solid var(--landing-border);
+  padding: 2.5rem 0;
+}
+
+.landing-trust-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .landing-trust-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.landing-trust-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.landing-trust-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--landing-primary-light);
+  flex-shrink: 0;
+}
+
+.landing-trust-text {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--landing-text-secondary);
+}
+
+/* =====================================================
+   SECTION: PROBLEM
+   ===================================================== */
+.landing-problem {
+  padding: var(--landing-section-padding) 0;
+  background: var(--landing-bg-dark);
+}
+
+.landing-problem-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.landing-problem-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.landing-problem-card {
+  background: var(--landing-bg-card);
+  border: 1px solid var(--landing-border);
+  border-radius: 0.75rem;
+  padding: 1.75rem;
+  transition: var(--landing-transition);
+}
+
+.landing-problem-card:hover {
+  border-color: var(--landing-border-hover);
+  transform: translateY(-4px);
+}
+
+.landing-problem-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #ef4444;
+  margin-bottom: 1rem;
+  opacity: 0.8;
+}
+
+.landing-problem-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--landing-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.landing-problem-desc {
+  font-size: 0.9375rem;
+  color: var(--landing-text-muted);
+  line-height: 1.6;
+}
+
+/* =====================================================
+   SECTION: SOLUTION
+   ===================================================== */
+.landing-solution {
+  padding: var(--landing-section-padding) 0;
+  background: var(--landing-bg-section);
+}
+
+.landing-solution-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.landing-solution-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.landing-solution-card {
+  background: var(--landing-gradient-card);
+  border: 1px solid var(--landing-border);
+  border-radius: 0.75rem;
+  padding: 2rem;
+  transition: var(--landing-transition);
+}
+
+.landing-solution-card:hover {
+  border-color: var(--landing-primary);
+  box-shadow: var(--landing-shadow-glow);
+}
+
+.landing-solution-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--landing-primary-light);
+  margin-bottom: 1.25rem;
+}
+
+.landing-solution-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--landing-text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.landing-solution-desc {
+  font-size: 1rem;
+  color: var(--landing-text-secondary);
+  line-height: 1.6;
+}
+
+/* =====================================================
+   SECTION: HOW IT WORKS
+   ===================================================== */
+.landing-how {
+  padding: var(--landing-section-padding) 0;
+  background: var(--landing-bg-dark);
+}
+
+.landing-how-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.landing-how-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+.landing-how-step {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  position: relative;
+  padding-bottom: 2.5rem;
+}
+
+.landing-how-step:last-child {
+  padding-bottom: 0;
+}
+
+.landing-how-number {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: var(--landing-gradient-cta);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.125rem;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.landing-how-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 1.4375rem;
+  top: 3rem;
+  width: 2px;
+  height: calc(100% - 3rem);
+  background: linear-gradient(to bottom, var(--landing-primary), var(--landing-border));
+}
+
+.landing-how-content {
+  padding-top: 0.5rem;
+}
+
+.landing-how-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--landing-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.landing-how-desc {
+  font-size: 0.9375rem;
+  color: var(--landing-text-muted);
+}
+
+/* =====================================================
+   SECTION: WHO IT'S FOR
+   ===================================================== */
+.landing-personas {
+  padding: var(--landing-section-padding) 0;
+  background: var(--landing-bg-section);
+}
+
+.landing-personas-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.landing-personas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.landing-persona-card {
+  background: var(--landing-bg-card);
+  border: 1px solid var(--landing-border);
+  border-radius: 0.75rem;
+  padding: 2rem;
+  text-align: center;
+  transition: var(--landing-transition);
+}
+
+.landing-persona-card:hover {
+  border-color: var(--landing-border-hover);
+  transform: translateY(-4px);
+}
+
+.landing-persona-icon {
+  width: 3rem;
+  height: 3rem;
+  color: var(--landing-primary-light);
+  margin: 0 auto 1.25rem;
+}
+
+.landing-persona-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--landing-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.landing-persona-desc {
+  font-size: 0.9375rem;
+  color: var(--landing-text-muted);
+  line-height: 1.5;
+}
+
+/* =====================================================
+   SECTION: PHILOSOPHY
+   ===================================================== */
+.landing-philosophy {
+  padding: var(--landing-section-padding) 0;
+  background: var(--landing-bg-dark);
+}
+
+.landing-philosophy-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.landing-philosophy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.landing-philosophy-item {
+  text-align: center;
+}
+
+.landing-philosophy-quote {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--landing-text-primary);
+  margin-bottom: 0.75rem;
+  position: relative;
+}
+
+.landing-philosophy-quote::before {
+  content: '"';
+  color: var(--landing-primary-light);
+  font-size: 2rem;
+  position: absolute;
+  top: -0.5rem;
+  left: -1rem;
+  opacity: 0.5;
+}
+
+.landing-philosophy-desc {
+  font-size: 0.9375rem;
+  color: var(--landing-text-muted);
+  line-height: 1.6;
+}
+
+/* =====================================================
+   SECTION: SECURITY
+   ===================================================== */
+.landing-security {
+  padding: var(--landing-section-padding) 0;
+  background: linear-gradient(180deg, var(--landing-bg-section) 0%, #0d0d12 100%);
+  border-block: 1px solid var(--landing-border);
+}
+
+.landing-security-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.landing-security-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.landing-security-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--landing-border);
+  border-radius: 0.5rem;
+}
+
+.landing-security-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #22c55e;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.landing-security-text {
+  font-size: 0.9375rem;
+  color: var(--landing-text-secondary);
+  line-height: 1.5;
+}
+
+/* =====================================================
+   SECTION: FINAL CTA
+   ===================================================== */
+.landing-cta {
+  padding: var(--landing-section-padding) 0;
+  background: var(--landing-bg-dark);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.1) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.landing-cta-content {
+  position: relative;
+  z-index: 1;
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.landing-cta-headline {
+  margin-bottom: 1rem;
+}
+
+.landing-cta-subtext {
+  margin-bottom: 2.5rem;
+}
+
+.landing-cta-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* =====================================================
+   FOOTER
+   ===================================================== */
+.landing-footer {
+  padding: 3rem 0;
+  background: var(--landing-bg-section);
+  border-top: 1px solid var(--landing-border);
+}
+
+.landing-footer-content {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.landing-footer-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.landing-footer-logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--landing-text-primary);
+  letter-spacing: 0.05em;
+}
+
+.landing-footer-desc {
+  font-size: 0.875rem;
+  color: var(--landing-text-muted);
+  max-width: 20rem;
+}
+
+.landing-footer-links {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.landing-footer-link {
+  font-size: 0.875rem;
+  color: var(--landing-text-muted);
+  text-decoration: none;
+  transition: var(--landing-transition);
+}
+
+.landing-footer-link:hover {
+  color: var(--landing-text-primary);
+}
+
+.landing-footer-lang {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.375rem;
+  background: var(--landing-bg-card);
+  border-radius: 0.375rem;
+  border: 1px solid var(--landing-border);
+}
+
+.landing-footer-lang-btn {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--landing-text-muted);
+  background: transparent;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: var(--landing-transition);
+}
+
+.landing-footer-lang-btn.active {
+  background: var(--landing-primary);
+  color: white;
+}
+
+.landing-footer-lang-btn:hover:not(.active) {
+  color: var(--landing-text-primary);
+}
+
+/* =====================================================
+   RESPONSIVE ADJUSTMENTS
+   ===================================================== */
+@media (max-width: 640px) {
+  :root {
+    --landing-section-padding: 4rem;
+  }
+  
+  .landing-hero {
+    min-height: auto;
+    padding: 6rem 0 4rem;
+  }
+  
+  .landing-hero-ctas {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .landing-btn {
+    width: 100%;
+    max-width: 280px;
+  }
+  
+  .landing-trust-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .landing-how-step {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .landing-how-step::after {
+    display: none;
+  }
+  
+  .landing-footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .landing-footer-links {
+    justify-content: center;
+  }
+}
+
+/* =====================================================
+   RTL SUPPORT
+   ===================================================== */
+[dir="rtl"] .landing-page {
+  text-align: right;
+}
+
+[dir="rtl"] .landing-hero-content,
+[dir="rtl"] .landing-solution-header,
+[dir="rtl"] .landing-how-header,
+[dir="rtl"] .landing-personas-header,
+[dir="rtl"] .landing-philosophy-header,
+[dir="rtl"] .landing-security-header,
+[dir="rtl"] .landing-cta-content {
+  text-align: center;
+}
+
+[dir="rtl"] .landing-problem-header {
+  text-align: center;
+}
+
+[dir="rtl"] .landing-how-step::after {
+  left: auto;
+  right: 1.4375rem;
+}
+
+[dir="rtl"] .landing-philosophy-quote::before {
+  left: auto;
+  right: -1rem;
+}

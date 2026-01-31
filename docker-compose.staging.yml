@@ -1,0 +1,198 @@
+# Rappit Local Staging Environment
+#
+# INFRA-01: Complete local staging with all integrations
+#
+# Includes:
+# - PostgreSQL (staging database)
+# - Redis (cache/queues)
+# - WooCommerce (WordPress + WooCommerce for testing)
+# - Rappit API
+#
+# Usage:
+#   docker-compose -f docker-compose.staging.yml up -d
+#
+# Access:
+#   - Rappit API: http://localhost:3000
+#   - WooCommerce: http://localhost:8080
+#   - WooCommerce Admin: http://localhost:8080/wp-admin
+#
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # PostgreSQL - Staging Database
+  # ===========================================
+  postgres-staging:
+    image: postgres:15-alpine
+    container_name: rappit-postgres-staging
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rappit_staging
+      POSTGRES_PASSWORD: rappit_staging_pass
+      POSTGRES_DB: rappit_staging
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+      - ./scripts/init-staging-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rappit_staging -d rappit_staging"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rappit-staging
+
+  # ===========================================
+  # Redis - Cache and Queue
+  # ===========================================
+  redis-staging:
+    image: redis:7-alpine
+    container_name: rappit-redis-staging
+    restart: unless-stopped
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis_staging_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rappit-staging
+
+  # ===========================================
+  # WordPress + WooCommerce
+  # ===========================================
+  woocommerce-db:
+    image: mysql:8.0
+    container_name: rappit-woocommerce-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: woocommerce_root
+      MYSQL_DATABASE: woocommerce
+      MYSQL_USER: woocommerce
+      MYSQL_PASSWORD: woocommerce_pass
+    volumes:
+      - woocommerce_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rappit-staging
+
+  woocommerce:
+    image: wordpress:6.4-php8.2-apache
+    container_name: rappit-woocommerce
+    restart: unless-stopped
+    depends_on:
+      woocommerce-db:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: woocommerce-db
+      WORDPRESS_DB_USER: woocommerce
+      WORDPRESS_DB_PASSWORD: woocommerce_pass
+      WORDPRESS_DB_NAME: woocommerce
+      WORDPRESS_DEBUG: "true"
+    ports:
+      - "8080:80"
+    volumes:
+      - woocommerce_data:/var/www/html
+      - ./staging/woocommerce/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini:ro
+    networks:
+      - rappit-staging
+
+  # ===========================================
+  # WooCommerce CLI (for initial setup)
+  # ===========================================
+  woocommerce-cli:
+    image: wordpress:cli
+    container_name: rappit-woocommerce-cli
+    depends_on:
+      - woocommerce
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: woocommerce-db
+      WORDPRESS_DB_USER: woocommerce
+      WORDPRESS_DB_PASSWORD: woocommerce_pass
+      WORDPRESS_DB_NAME: woocommerce
+    volumes:
+      - woocommerce_data:/var/www/html
+      - ./staging/woocommerce/setup-woocommerce.sh:/setup-woocommerce.sh:ro
+    entrypoint: ["sh", "-c", "sleep 30 && /setup-woocommerce.sh"]
+    networks:
+      - rappit-staging
+
+  # ===========================================
+  # Rappit API (NestJS)
+  # ===========================================
+  rappit-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.staging
+    container_name: rappit-api-staging
+    restart: unless-stopped
+    depends_on:
+      postgres-staging:
+        condition: service_healthy
+      redis-staging:
+        condition: service_healthy
+    environment:
+      NODE_ENV: staging
+      PORT: 3000
+      DATABASE_URL: postgresql://rappit_staging:rappit_staging_pass@postgres-staging:5432/rappit_staging
+      REDIS_HOST: redis-staging
+      REDIS_PORT: 6379
+      JWT_SECRET: staging-jwt-secret-change-in-production
+      # WooCommerce connection
+      WOOCOMMERCE_URL: http://woocommerce
+      WOOCOMMERCE_CONSUMER_KEY: ${WOOCOMMERCE_CONSUMER_KEY:-}
+      WOOCOMMERCE_CONSUMER_SECRET: ${WOOCOMMERCE_CONSUMER_SECRET:-}
+      # Carrier sandbox credentials
+      FEDEX_API_KEY: ${FEDEX_SANDBOX_API_KEY:-}
+      FEDEX_SECRET_KEY: ${FEDEX_SANDBOX_SECRET_KEY:-}
+      FEDEX_ACCOUNT_NUMBER: ${FEDEX_SANDBOX_ACCOUNT:-}
+      FEDEX_SANDBOX_MODE: "true"
+      DHL_API_KEY: ${DHL_SANDBOX_API_KEY:-}
+      DHL_API_SECRET: ${DHL_SANDBOX_SECRET:-}
+      DHL_SANDBOX_MODE: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src:ro
+      - ./prisma:/app/prisma:ro
+    networks:
+      - rappit-staging
+
+  # ===========================================
+  # ngrok (for webhook testing)
+  # ===========================================
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: rappit-ngrok
+    restart: unless-stopped
+    environment:
+      NGROK_AUTHTOKEN: ${NGROK_AUTHTOKEN:-}
+    command: http rappit-api:3000 --log stdout
+    ports:
+      - "4040:4040"  # ngrok dashboard
+    networks:
+      - rappit-staging
+    profiles:
+      - webhooks  # Only start when needed: docker-compose --profile webhooks up
+
+networks:
+  rappit-staging:
+    name: rappit-staging-network
+    driver: bridge
+
+volumes:
+  postgres_staging_data:
+  redis_staging_data:
+  woocommerce_db_data:
+  woocommerce_data:

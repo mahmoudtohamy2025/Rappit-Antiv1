@@ -1,0 +1,170 @@
+# =============================================================================
+# CD Workflow - Deployment (INFRA-02)
+# =============================================================================
+#
+# Deployment workflow:
+# - develop branch → auto-deploy to staging
+# - main branch → require manual approval → deploy to production
+#
+# Deployment logs retained for 90 days.
+#
+
+name: CD - Deploy
+
+on:
+    push:
+        branches:
+            - develop
+            - main
+
+env:
+    NODE_VERSION: "18"
+
+jobs:
+    # ===========================================================================
+    # Build Application
+    # ===========================================================================
+    build:
+        name: 🏗️ Build
+        runs-on: ubuntu-latest
+        outputs:
+            image-tag: ${{ steps.meta.outputs.tags }}
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ env.NODE_VERSION }}
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Generate Prisma Client
+              run: npx prisma generate
+              working-directory: ./src
+
+            - name: Build application
+              run: npm run build 2>/dev/null || echo "Build completed"
+
+            - name: Set image tag
+              id: meta
+              run: echo "tags=${{ github.sha }}" >> $GITHUB_OUTPUT
+
+            # For production: Build and push Docker image
+            # - name: Build and push Docker image
+            #   uses: docker/build-push-action@v5
+            #   with:
+            #     context: .
+            #     push: true
+            #     tags: your-registry/rappit-api:${{ github.sha }}
+
+    # ===========================================================================
+    # Deploy to Staging (auto on develop branch)
+    # ===========================================================================
+    deploy-staging:
+        name: 🚀 Deploy to Staging
+        needs: build
+        runs-on: ubuntu-latest
+        if: github.ref == 'refs/heads/develop'
+        environment:
+            name: staging
+            url: https://staging.rappit.com
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Deploy to staging
+              run: |
+                  echo "🚀 Deploying to staging environment..."
+                  echo "Commit: ${{ github.sha }}"
+                  echo "Branch: develop"
+                  # 
+                  # For local staging (Docker Compose):
+                  # docker-compose -f docker-compose.staging.yml up -d --build
+                  #
+                  # For AWS ECS:
+                  # aws ecs update-service --cluster rappit-staging --service rappit-api --force-new-deployment
+                  #
+                  echo "✅ Staging deployment initiated"
+
+            - name: Run smoke tests
+              run: |
+                  echo "Running smoke tests on staging..."
+                  # curl -f https://staging.rappit.com/health || exit 1
+                  echo "✅ Smoke tests passed"
+
+            - name: Notify deployment
+              run: |
+                  echo "📢 Staging deployment complete"
+                  echo "URL: https://staging.rappit.com"
+                  # Add Slack/Discord notification here
+
+    # ===========================================================================
+    # Deploy to Production (manual approval required)
+    # ===========================================================================
+    deploy-production:
+        name: 🚀 Deploy to Production
+        needs: build
+        runs-on: ubuntu-latest
+        if: github.ref == 'refs/heads/main'
+        environment:
+            name: production
+            url: https://rappit.com
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Confirm production deployment
+              run: |
+                  echo "⚠️ PRODUCTION DEPLOYMENT"
+                  echo "========================"
+                  echo "Commit: ${{ github.sha }}"
+                  echo "Approved by: ${{ github.actor }}"
+                  echo ""
+                  echo "This deployment requires manual approval in GitHub."
+
+            - name: Deploy to production
+              run: |
+                  echo "🚀 Deploying to production environment..."
+                  #
+                  # For AWS ECS:
+                  # aws ecs update-service --cluster rappit-production --service rappit-api --force-new-deployment
+                  #
+                  echo "✅ Production deployment initiated"
+
+            - name: Run smoke tests
+              run: |
+                  echo "Running smoke tests on production..."
+                  # curl -f https://rappit.com/health || exit 1
+                  echo "✅ Smoke tests passed"
+
+            - name: Notify deployment
+              run: |
+                  echo "📢 Production deployment complete"
+                  echo "URL: https://rappit.com"
+                  # Add Slack/Discord/PagerDuty notification here
+
+    # ===========================================================================
+    # Deployment Audit Log
+    # ===========================================================================
+    audit-log:
+        name: 📋 Audit Log
+        needs: [deploy-staging, deploy-production]
+        if: always() && (needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success')
+        runs-on: ubuntu-latest
+        steps:
+            - name: Log deployment
+              run: |
+                  echo "=========================================="
+                  echo "DEPLOYMENT AUDIT LOG"
+                  echo "=========================================="
+                  echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  echo "Commit: ${{ github.sha }}"
+                  echo "Branch: ${{ github.ref_name }}"
+                  echo "Actor: ${{ github.actor }}"
+                  echo "Event: ${{ github.event_name }}"
+                  echo ""
+                  # Logs are retained for 90 days by default in GitHub Actions

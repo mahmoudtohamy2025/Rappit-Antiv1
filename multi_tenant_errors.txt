@@ -1,0 +1,859 @@
+  Multi-Tenant Isolation (e2e)
+    Orders Isolation
+      ✕ should return 404 when Org A tries to READ Org B order (409 ms)
+      ✕ should return 404 when Org A tries to UPDATE Org B order (123 ms)
+      ✕ should return 404 when Org A tries to DELETE Org B order (193 ms)
+      ✕ should only list orders from own organization (109 ms)
+    Inventory Isolation
+      ✕ should return 404 when Org A tries to READ Org B inventory item (125 ms)
+      ✓ should only list inventory from own organization (134 ms)
+    Channels Isolation
+      ✕ should return 404 when Org A tries to READ Org B channel (142 ms)
+      ✓ should only list channels from own organization (117 ms)
+    Shipments Isolation
+      ✕ should return 404 when Org A tries to READ Org B shipment (110 ms)
+      ✕ should only list shipments from own organization (62 ms)
+    Direct Query with Wrong OrgId
+      ✕ should return 404 for order with valid ID but wrong org context (77 ms)
+      ✕ should return 404 for channel with valid ID but wrong org context (63 ms)
+      ✕ should return 404 for inventory with valid ID but wrong org context (55 ms)
+      ✕ should return 404 for shipment with valid ID but wrong org context (85 ms)
+    Bidirectional Isolation
+      ✕ should return 404 when Org B tries to READ Org A order (61 ms)
+      ✕ should return 404 when Org B tries to READ Org A inventory (69 ms)
+      ✕ should return 404 when Org B tries to READ Org A channel (65 ms)
+      ✕ should return 404 when Org B tries to READ Org A shipment (73 ms)
+
+  ● Multi-Tenant Isolation (e2e) › Orders Isolation › should return 404 when Org A tries to READ Org B order
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+       98 |                 .get(`/orders/${orgB.data.orderId}`)
+       99 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 100 |                 .expect(404);
+          |                  ^
+      101 |
+      102 |             expect(response.body.statusCode).toBe(404);
+      103 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:100:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Orders Isolation › should return 404 when Org A tries to UPDATE Org B order
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      108 |                 .set('Authorization', `Bearer ${orgA.token}`)
+      109 |                 .send({ status: 'PAID', comment: 'Attempted cross-org update' })
+    > 110 |                 .expect(404);
+          |                  ^
+      111 |
+      112 |             expect(response.body.statusCode).toBe(404);
+      113 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:110:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Orders Isolation › should return 404 when Org A tries to DELETE Org B order
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      117 |                 .delete(`/orders/${orgB.data.orderId}`)
+      118 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 119 |                 .expect(404);
+          |                  ^
+      120 |
+      121 |             expect(response.body.statusCode).toBe(404);
+      122 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:119:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Orders Isolation › should only list orders from own organization
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      127 |                 .get('/orders')
+      128 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 129 |                 .expect(200);
+          |                  ^
+      130 |
+      131 |             // Verify all orders belong to Org A
+      132 |             const ordersA = responseA.body.data || responseA.body;
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:129:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Inventory Isolation › should return 404 when Org A tries to READ Org B inventory item
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      151 |                 .get(`/inventory/${orgB.data.inventoryId}`)
+      152 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 153 |                 .expect(404);
+          |                  ^
+      154 |
+      155 |             expect(response.body.statusCode).toBe(404);
+      156 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:153:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Channels Isolation › should return 404 when Org A tries to READ Org B channel
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      180 |                 .get(`/channels/${orgB.data.channelId}`)
+      181 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 182 |                 .expect(404);
+          |                  ^
+      183 |
+      184 |             expect(response.body.statusCode).toBe(404);
+      185 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:182:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Shipments Isolation › should return 404 when Org A tries to READ Org B shipment
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      209 |                 .get(`/shipments/${orgB.data.shipmentId}`)
+      210 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 211 |                 .expect(404);
+          |                  ^
+      212 |
+      213 |             expect(response.body.statusCode).toBe(404);
+      214 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:211:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Shipments Isolation › should only list shipments from own organization
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      219 |                 .get('/shipments')
+      220 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 221 |                 .expect(200);
+          |                  ^
+      222 |
+      223 |             // Verify Org B's shipment ID is NOT in Org A's list
+      224 |             const shipmentList = responseA.body.data || responseA.body;
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:221:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Direct Query with Wrong OrgId › should return 404 for order with valid ID but wrong org context
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      239 |                 .get(`/orders/${orgB.data.orderId}`)
+      240 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 241 |                 .expect(404);
+          |                  ^
+      242 |
+      243 |             // Verify it's a 404, not a 403
+      244 |             expect(response.body.statusCode).toBe(404);
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:241:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Direct Query with Wrong OrgId › should return 404 for channel with valid ID but wrong org context
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      250 |                 .get(`/channels/${orgB.data.channelId}`)
+      251 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 252 |                 .expect(404);
+          |                  ^
+      253 |
+      254 |             expect(response.body.statusCode).toBe(404);
+      255 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:252:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Direct Query with Wrong OrgId › should return 404 for inventory with valid ID but wrong org context
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      259 |                 .get(`/inventory/${orgB.data.inventoryId}`)
+      260 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 261 |                 .expect(404);
+          |                  ^
+      262 |
+      263 |             expect(response.body.statusCode).toBe(404);
+      264 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:261:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Direct Query with Wrong OrgId › should return 404 for shipment with valid ID but wrong org context
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      268 |                 .get(`/shipments/${orgB.data.shipmentId}`)
+      269 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 270 |                 .expect(404);
+          |                  ^
+      271 |
+      272 |             expect(response.body.statusCode).toBe(404);
+      273 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:270:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Bidirectional Isolation › should return 404 when Org B tries to READ Org A order
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      282 |                 .get(`/orders/${orgA.data.orderId}`)
+      283 |                 .set('Authorization', `Bearer ${orgB.token}`)
+    > 284 |                 .expect(404);
+          |                  ^
+      285 |
+      286 |             expect(response.body.statusCode).toBe(404);
+      287 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:284:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Bidirectional Isolation › should return 404 when Org B tries to READ Org A inventory
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      291 |                 .get(`/inventory/${orgA.data.inventoryId}`)
+      292 |                 .set('Authorization', `Bearer ${orgB.token}`)
+    > 293 |                 .expect(404);
+          |                  ^
+      294 |
+      295 |             expect(response.body.statusCode).toBe(404);
+      296 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:293:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Bidirectional Isolation › should return 404 when Org B tries to READ Org A channel
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      300 |                 .get(`/channels/${orgA.data.channelId}`)
+      301 |                 .set('Authorization', `Bearer ${orgB.token}`)
+    > 302 |                 .expect(404);
+          |                  ^
+      303 |
+      304 |             expect(response.body.statusCode).toBe(404);
+      305 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:302:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Bidirectional Isolation › should return 404 when Org B tries to READ Org A shipment
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      309 |                 .get(`/shipments/${orgA.data.shipmentId}`)
+      310 |                 .set('Authorization', `Bearer ${orgB.token}`)
+    > 311 |                 .expect(404);
+          |                  ^
+      312 |
+      313 |             expect(response.body.statusCode).toBe(404);
+      314 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:311:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:35 PM [32m    LOG[39m [38;5;3m[RedisConnection] [39m[32mCreating Redis connection to 127.0.0.1:6385, DB: 0[39m
+  console.log
+    🧪 Test suite starting...
+
+      at Object.<anonymous> (test/setup.ts:15:11)
+
+  console.log
+    📦 Database: postgresql://rappit_test:***@localhost:5440/rappit_test
+
+      at Object.<anonymous> (test/setup.ts:16:11)
+
+  console.log
+    📮 Redis: 127.0.0.1:6385
+
+      at Object.<anonymous> (test/setup.ts:17:11)
+
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[FedExIntegration] [39mObject(3) {
+  timestamp: [32m'2026-01-04T21:29:36.143Z'[39m,
+  level: [32m'info'[39m,
+  message: [32m'FedExIntegrationService initialized'[39m
+}
+[33m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [33m   WARN[39m [38;5;3m[EmailService] [39m[33mEmail service disabled - RESEND_API_KEY not configured[39m
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[FedExIntegration] [39mObject(3) {
+  timestamp: [32m'2026-01-04T21:29:36.150Z'[39m,
+  level: [32m'info'[39m,
+  message: [32m'FedExIntegrationService initialized'[39m
+}
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[StripeService] [39m[32mStripe client initialized[39m
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[RedisConnection] [39m[32mRedis connection established[39m
+[33m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [33m   WARN[39m [38;5;3m[RedisConnection] [39m[33mRedis connection closed[39m
+[33m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [33m   WARN[39m [38;5;3m[RedisConnection] [39m[33mRedis connection ended[39m
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[RedisConnection] [39m[32mRedis connection ready[39m
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[PrismaService] [39m[32mPrisma connected to database[39m
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[EncryptionService] [39m[32mEncryption service initialized with AES-256-GCM[39m
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[ShopifySyncScheduler] [39m[32mStarting Shopify sync scheduler[39m
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[PrismaService] [39m[32mPrisma connected to database[39m
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[PrismaService] [39m[32mPrisma connected to database[39m
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[PrismaService] [39m[32mPrisma connected to database[39m
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[RateLimitService] [39m[32mRate limit reset for ratelimit:auth:ip:192.168.170.127 [39m
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[RateLimitService] [39m[32mRate limit reset for ratelimit:auth:email:test - 1767562175964 @example.com[39m
+[31m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [31m  ERROR[39m [38;5;3m[ExceptionsHandler] [39mUnauthorizedException: Invalid credentials
+    at AuthService.login [90m(/Users/mahmoudtohamy/Desktop/RappitMVPV0.1-main 3/[39msrc/src/modules/auth/auth.service.ts:194:13[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at [90m/Users/mahmoudtohamy/Desktop/RappitMVPV0.1-main 3/[39mnode_modules/[4m@nestjs/core[24m/router/router-execution-context.js:46:28
+    at [90m/Users/mahmoudtohamy/Desktop/RappitMVPV0.1-main 3/[39mnode_modules/[4m@nestjs/core[24m/router/router-proxy.js:9:17 {
+  response: {
+    message: [32m'Invalid credentials'[39m,
+    error: [32m'Unauthorized'[39m,
+    statusCode: [33m401[39m
+  },
+  status: [33m401[39m,
+  options: {}
+}
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[RateLimitService] [39m[32mRate limit reset for ratelimit:auth:ip:192.168.170.127 [39m
+[32m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [32m    LOG[39m [38;5;3m[RateLimitService] [39m[32mRate limit reset for ratelimit:auth:email:test - 1767562175964 @example.com[39m
+[31m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [31m  ERROR[39m [38;5;3m[ExceptionsHandler] [39mUnauthorizedException: Invalid credentials
+    at AuthService.login [90m(/Users/mahmoudtohamy/Desktop/RappitMVPV0.1-main 3/[39msrc/src/modules/auth/auth.service.ts:194:13[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at [90m/Users/mahmoudtohamy/Desktop/RappitMVPV0.1-main 3/[39mnode_modules/[4m@nestjs/core[24m/router/router-execution-context.js:46:28
+    at [90m/Users/mahmoudtohamy/Desktop/RappitMVPV0.1-main 3/[39mnode_modules/[4m@nestjs/core[24m/router/router-proxy.js:9:17 {
+  response: {
+    message: [32m'Invalid credentials'[39m,
+    error: [32m'Unauthorized'[39m,
+    statusCode: [33m401[39m
+  },
+  status: [33m401[39m,
+  options: {}
+}
+[31m[Nest] 37594  - [39m01/04/2026, 11:29:36 PM [31m  ERROR[39m [38;5;3m[ExceptionsHandler] [39mUnauthorizedException: Invalid credentials
+    at AuthService.login [90m(/Users/mahmoudtohamy/Desktop/RappitMVPV0.1-main 3/[39msrc/src/modules/auth/auth.service.ts:194:13[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at [90m/Users/mahmoudtohamy/Desktop/RappitMVPV0.1-main 3/[39mnode_modules/[4m@nestjs/core[24m/router/router-execution-context.js:46:28
+    at [90m/Users/mahmoudtohamy/Desktop/RappitMVPV0.1-main 3/[39mnode_modules/[4m@nestjs/core[24m/router/router-proxy.js:9:17 {
+  response: {
+    message: [32m'Invalid credentials'[39m,
+    error: [32m'Unauthorized'[39m,
+    statusCode: [33m401[39m
+  },
+  status: [33m401[39m,
+  options: {}
+--
+  ● Multi-Tenant Isolation (e2e) › Orders Isolation › should return 404 when Org A tries to READ Org B order
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+       98 |                 .get(`/orders/${orgB.data.orderId}`)
+       99 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 100 |                 .expect(404);
+          |                  ^
+      101 |
+      102 |             expect(response.body.statusCode).toBe(404);
+      103 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:100:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Orders Isolation › should return 404 when Org A tries to UPDATE Org B order
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      108 |                 .set('Authorization', `Bearer ${orgA.token}`)
+      109 |                 .send({ status: 'PAID', comment: 'Attempted cross-org update' })
+    > 110 |                 .expect(404);
+          |                  ^
+      111 |
+      112 |             expect(response.body.statusCode).toBe(404);
+      113 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:110:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Orders Isolation › should return 404 when Org A tries to DELETE Org B order
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      117 |                 .delete(`/orders/${orgB.data.orderId}`)
+      118 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 119 |                 .expect(404);
+          |                  ^
+      120 |
+      121 |             expect(response.body.statusCode).toBe(404);
+      122 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:119:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Orders Isolation › should only list orders from own organization
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      127 |                 .get('/orders')
+      128 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 129 |                 .expect(200);
+          |                  ^
+      130 |
+      131 |             // Verify all orders belong to Org A
+      132 |             const ordersA = responseA.body.data || responseA.body;
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:129:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Inventory Isolation › should return 404 when Org A tries to READ Org B inventory item
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      151 |                 .get(`/inventory/${orgB.data.inventoryId}`)
+      152 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 153 |                 .expect(404);
+          |                  ^
+      154 |
+      155 |             expect(response.body.statusCode).toBe(404);
+      156 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:153:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Channels Isolation › should return 404 when Org A tries to READ Org B channel
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      180 |                 .get(`/channels/${orgB.data.channelId}`)
+      181 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 182 |                 .expect(404);
+          |                  ^
+      183 |
+      184 |             expect(response.body.statusCode).toBe(404);
+      185 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:182:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Shipments Isolation › should return 404 when Org A tries to READ Org B shipment
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      209 |                 .get(`/shipments/${orgB.data.shipmentId}`)
+      210 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 211 |                 .expect(404);
+          |                  ^
+      212 |
+      213 |             expect(response.body.statusCode).toBe(404);
+      214 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:211:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Shipments Isolation › should only list shipments from own organization
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+      219 |                 .get('/shipments')
+      220 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 221 |                 .expect(200);
+          |                  ^
+      222 |
+      223 |             // Verify Org B's shipment ID is NOT in Org A's list
+      224 |             const shipmentList = responseA.body.data || responseA.body;
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:221:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Direct Query with Wrong OrgId › should return 404 for order with valid ID but wrong org context
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      239 |                 .get(`/orders/${orgB.data.orderId}`)
+      240 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 241 |                 .expect(404);
+          |                  ^
+      242 |
+      243 |             // Verify it's a 404, not a 403
+      244 |             expect(response.body.statusCode).toBe(404);
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:241:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Direct Query with Wrong OrgId › should return 404 for channel with valid ID but wrong org context
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      250 |                 .get(`/channels/${orgB.data.channelId}`)
+      251 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 252 |                 .expect(404);
+          |                  ^
+      253 |
+      254 |             expect(response.body.statusCode).toBe(404);
+      255 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:252:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Direct Query with Wrong OrgId › should return 404 for inventory with valid ID but wrong org context
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      259 |                 .get(`/inventory/${orgB.data.inventoryId}`)
+      260 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 261 |                 .expect(404);
+          |                  ^
+      262 |
+      263 |             expect(response.body.statusCode).toBe(404);
+      264 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:261:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Direct Query with Wrong OrgId › should return 404 for shipment with valid ID but wrong org context
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      268 |                 .get(`/shipments/${orgB.data.shipmentId}`)
+      269 |                 .set('Authorization', `Bearer ${orgA.token}`)
+    > 270 |                 .expect(404);
+          |                  ^
+      271 |
+      272 |             expect(response.body.statusCode).toBe(404);
+      273 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:270:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Bidirectional Isolation › should return 404 when Org B tries to READ Org A order
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      282 |                 .get(`/orders/${orgA.data.orderId}`)
+      283 |                 .set('Authorization', `Bearer ${orgB.token}`)
+    > 284 |                 .expect(404);
+          |                  ^
+      285 |
+      286 |             expect(response.body.statusCode).toBe(404);
+      287 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:284:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Bidirectional Isolation › should return 404 when Org B tries to READ Org A inventory
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      291 |                 .get(`/inventory/${orgA.data.inventoryId}`)
+      292 |                 .set('Authorization', `Bearer ${orgB.token}`)
+    > 293 |                 .expect(404);
+          |                  ^
+      294 |
+      295 |             expect(response.body.statusCode).toBe(404);
+      296 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:293:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Bidirectional Isolation › should return 404 when Org B tries to READ Org A channel
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      300 |                 .get(`/channels/${orgA.data.channelId}`)
+      301 |                 .set('Authorization', `Bearer ${orgB.token}`)
+    > 302 |                 .expect(404);
+          |                  ^
+      303 |
+      304 |             expect(response.body.statusCode).toBe(404);
+      305 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:302:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+  ● Multi-Tenant Isolation (e2e) › Bidirectional Isolation › should return 404 when Org B tries to READ Org A shipment
+
+    expected 404 "Not Found", got 500 "Internal Server Error"
+
+      309 |                 .get(`/shipments/${orgA.data.shipmentId}`)
+      310 |                 .set('Authorization', `Bearer ${orgB.token}`)
+    > 311 |                 .expect(404);
+          |                  ^
+      312 |
+      313 |             expect(response.body.statusCode).toBe(404);
+      314 |         });
+
+      at Object.<anonymous> (test/integration/multi-tenant.e2e-spec.ts:311:18)
+      ----
+      at Test._assertStatus (../node_modules/supertest/lib/test.js:309:14)
+      at ../node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (../node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (../node_modules/supertest/lib/test.js:195:23)
+      at localAssert (../node_modules/supertest/lib/test.js:138:14)
+      at Server.<anonymous> (../node_modules/supertest/lib/test.js:152:11)
+
+FAIL test/integration/rate-limiter.e2e-spec.ts (7.077 s)
+  ● Rate Limiter E2E Tests › Login Rate Limiting (Auth Endpoints) › should return 429 when rate limit exceeded
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 429
+    Received: 500
+
+      134 |                 });
+      135 |
+    > 136 |             expect(response.status).toBe(HttpStatus.TOO_MANY_REQUESTS);
+          |                                     ^
+      137 |             expect(response.headers['retry-after']).toBeDefined();
+      138 |             expect(response.body.retryAfter).toBeDefined();
+      139 |         });
+
+      at Object.<anonymous> (test/integration/rate-limiter.e2e-spec.ts:136:37)
+
+  ● Rate Limiter E2E Tests › Login Rate Limiting (Auth Endpoints) › should return Retry-After header with seconds remaining
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 429
+    Received: 500
+
+      160 |                 });
+      161 |
+    > 162 |             expect(response.status).toBe(HttpStatus.TOO_MANY_REQUESTS);
+          |                                     ^
+      163 |
+      164 |             const retryAfter = parseInt(response.headers['retry-after'], 10);
+      165 |             expect(retryAfter).toBeGreaterThan(0);
+
+      at Object.<anonymous> (test/integration/rate-limiter.e2e-spec.ts:162:37)
+
+  ● Rate Limiter E2E Tests › Different IPs Have Separate Limits › should track rate limits separately for different IPs
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 429
+    Received: 500
+
+      189 |                 .send({ email: testEmail, password: 'wrong' });
+      190 |
+    > 191 |             expect(responseIp1.status).toBe(HttpStatus.TOO_MANY_REQUESTS);
+          |                                        ^
+      192 |
+      193 |             // Request from second IP should still be allowed
+      194 |             const responseIp2 = await request(app.getHttpServer())
+
+      at Object.<anonymous> (test/integration/rate-limiter.e2e-spec.ts:191:40)
+
+  ● Rate Limiter E2E Tests › Account Lockout › should lock account after too many failed attempts
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      221 |             // Check if account is locked
+      222 |             const lockStatus = await rateLimitService.isAccountLocked(testEmail);
+    > 223 |             expect(lockStatus.locked).toBe(true);
+          |                                       ^
+      224 |             expect(lockStatus.retryAfterSeconds).toBeDefined();
+      225 |         });
+      226 |
+
+      at Object.<anonymous> (test/integration/rate-limiter.e2e-spec.ts:223:39)
+
+  ● Rate Limiter E2E Tests › Account Lockout › should return 429 when attempting to login to locked account
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 429
+    Received: 500
+
+      242 |                 .send({ email: testEmail, password: 'anypassword' });
+      243 |
+    > 244 |             expect(response.status).toBe(HttpStatus.TOO_MANY_REQUESTS);
+          |                                     ^
