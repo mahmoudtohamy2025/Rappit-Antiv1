@@ -475,14 +475,8 @@ export class WooCommerceIntegrationService {
   /**
    * HTTP GET request with OAuth1 signature
    * 
-   * WooCommerce uses OAuth1 for authentication.
-   * 
-   * @param url - Full URL
-   * @param consumerKey - WooCommerce consumer key
-   * @param consumerSecret - WooCommerce consumer secret
-   * @returns Response data
-   * 
-   * TODO: Implement with axios or node-fetch + OAuth1 signing
+   * WooCommerce uses OAuth1.0a for authentication.
+   * OAuth parameters are appended to the URL as query parameters.
    */
   protected async httpGet(
     url: string,
@@ -491,24 +485,46 @@ export class WooCommerceIntegrationService {
   ): Promise<any> {
     this.logger.debug(`GET ${url}`);
 
-    // Generate OAuth1 signature
-    const oauthParams = createOAuth1Signature(
-      'GET',
-      url,
-      consumerKey,
-      consumerSecret,
-    );
+    const axios = require('axios');
 
-    // Add OAuth params to URL
-    const urlWithOAuth = this.appendOAuthParams(url, oauthParams);
+    try {
+      // Generate OAuth1 signature
+      const oauthParams = createOAuth1Signature(
+        'GET',
+        url,
+        consumerKey,
+        consumerSecret,
+      );
 
-    // TODO: Implement actual HTTP request
-    // const response = await axios.get(urlWithOAuth);
-    // return response.data;
+      // Add OAuth params to URL
+      const urlWithOAuth = this.appendOAuthParams(url, oauthParams);
 
-    throw new NotImplementedException(
-      'httpGet not implemented - use axios/fetch with OAuth1 signature',
-    );
+      // Make HTTP request
+      const response = await axios.get(urlWithOAuth, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000, // 30 seconds timeout
+      });
+
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(`GET request failed: ${error.message}`, {
+        url,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
+      if (error.response) {
+        throw new Error(
+          `WooCommerce API request failed (HTTP ${error.response.status}): ${
+            error.response.data?.message || error.message
+          }`
+        );
+      }
+
+      throw new Error(`WooCommerce API request failed: ${error.message}`);
+    }
   }
 
   /**
@@ -522,16 +538,46 @@ export class WooCommerceIntegrationService {
   ): Promise<any> {
     this.logger.debug(`POST ${url}`);
 
-    const oauthParams = createOAuth1Signature(
-      'POST',
-      url,
-      consumerKey,
-      consumerSecret,
-    );
+    const axios = require('axios');
 
-    const urlWithOAuth = this.appendOAuthParams(url, oauthParams);
+    try {
+      // Generate OAuth1 signature for the base URL (without body)
+      const oauthParams = createOAuth1Signature(
+        'POST',
+        url,
+        consumerKey,
+        consumerSecret,
+      );
 
-    throw new NotImplementedException('httpPost not implemented');
+      // Add OAuth params to URL
+      const urlWithOAuth = this.appendOAuthParams(url, oauthParams);
+
+      // Make HTTP request with data in body
+      const response = await axios.post(urlWithOAuth, data, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+      });
+
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(`POST request failed: ${error.message}`, {
+        url,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
+      if (error.response) {
+        throw new Error(
+          `WooCommerce API request failed (HTTP ${error.response.status}): ${
+            error.response.data?.message || error.message
+          }`
+        );
+      }
+
+      throw new Error(`WooCommerce API request failed: ${error.message}`);
+    }
   }
 
   /**
@@ -545,16 +591,46 @@ export class WooCommerceIntegrationService {
   ): Promise<any> {
     this.logger.debug(`PUT ${url}`);
 
-    const oauthParams = createOAuth1Signature(
-      'PUT',
-      url,
-      consumerKey,
-      consumerSecret,
-    );
+    const axios = require('axios');
 
-    const urlWithOAuth = this.appendOAuthParams(url, oauthParams);
+    try {
+      // Generate OAuth1 signature
+      const oauthParams = createOAuth1Signature(
+        'PUT',
+        url,
+        consumerKey,
+        consumerSecret,
+      );
 
-    throw new NotImplementedException('httpPut not implemented');
+      // Add OAuth params to URL
+      const urlWithOAuth = this.appendOAuthParams(url, oauthParams);
+
+      // Make HTTP request with data in body
+      const response = await axios.put(urlWithOAuth, data, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+      });
+
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(`PUT request failed: ${error.message}`, {
+        url,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
+      if (error.response) {
+        throw new Error(
+          `WooCommerce API request failed (HTTP ${error.response.status}): ${
+            error.response.data?.message || error.message
+          }`
+        );
+      }
+
+      throw new Error(`WooCommerce API request failed: ${error.message}`);
+    }
   }
 
   /**
@@ -567,16 +643,46 @@ export class WooCommerceIntegrationService {
   ): Promise<any> {
     this.logger.debug(`DELETE ${url}`);
 
-    const oauthParams = createOAuth1Signature(
-      'DELETE',
-      url,
-      consumerKey,
-      consumerSecret,
-    );
+    const axios = require('axios');
 
-    const urlWithOAuth = this.appendOAuthParams(url, oauthParams);
+    try {
+      // Generate OAuth1 signature
+      const oauthParams = createOAuth1Signature(
+        'DELETE',
+        url,
+        consumerKey,
+        consumerSecret,
+      );
 
-    throw new NotImplementedException('httpDelete not implemented');
+      // Add OAuth params to URL
+      const urlWithOAuth = this.appendOAuthParams(url, oauthParams);
+
+      // Make HTTP request
+      const response = await axios.delete(urlWithOAuth, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+      });
+
+      return response.data;
+    } catch (error: any) {
+      this.logger.error(`DELETE request failed: ${error.message}`, {
+        url,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
+      if (error.response) {
+        throw new Error(
+          `WooCommerce API request failed (HTTP ${error.response.status}): ${
+            error.response.data?.message || error.message
+          }`
+        );
+      }
+
+      throw new Error(`WooCommerce API request failed: ${error.message}`);
+    }
   }
 
   /**
