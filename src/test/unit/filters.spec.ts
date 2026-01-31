@@ -132,7 +132,6 @@ describe('InventoryFilters Component', () => {
 
         it('should have clear filters button that resets all filters', () => {
             // Simulate filter state and clear action
-            const filters = { warehouseId: 'wh-1', category: 'إلكترونيات', stockLevel: 'low' };
             const clearFilters = () => ({ warehouseId: undefined, category: undefined, stockLevel: undefined });
             
             const clearedFilters = clearFilters();
