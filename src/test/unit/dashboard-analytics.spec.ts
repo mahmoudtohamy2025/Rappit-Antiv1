@@ -171,7 +171,7 @@ describe('RevenueChart', () => {
     });
 
     it('should validate date range filter values', () => {
-        const validRanges = ['7d', '30d', '90d', '1y'];
+        const validRanges = ['7d', '30d', '90d', '12m'];
         const range = '7d';
         
         expect(validRanges).toContain(range);
