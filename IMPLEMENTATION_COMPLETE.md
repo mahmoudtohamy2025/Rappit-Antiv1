@@ -10,8 +10,8 @@ Successfully completed all four critical tasks for implementing production-ready
 ## Changes Summary
 
 ### 📦 Dependencies Added
-- `axios@1.7.9` - HTTP client library
-- `@nestjs/axios@3.1.2` - NestJS wrapper for axios
+- `axios@^1.7.9` - HTTP client library
+- `@nestjs/axios@^3.1.2` - NestJS wrapper for axios
 
 ### 📝 Files Modified (5 files, +741 lines, -188 lines)
 

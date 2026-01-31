@@ -734,15 +734,28 @@ startxref
         },
       },
       content: {
-        packages: request.packages.map((pkg, index) => ({
-          typeCode: '2BP', // Customer provided box/package
-          weight: pkg.weightKg,
-          dimensions: {
-            length: pkg.lengthCm || 10,
-            width: pkg.widthCm || 10,
-            height: pkg.heightCm || 10,
-          },
-        })),
+        packages: request.packages.map((pkg) => {
+          // Warn if dimensions are missing as they are critical for accurate shipping costs
+          if (!pkg.lengthCm || !pkg.widthCm || !pkg.heightCm) {
+            this.logger.warn('Package dimensions missing, using defaults (10cm). This may affect shipping costs.', {
+              providedDimensions: {
+                length: pkg.lengthCm,
+                width: pkg.widthCm,
+                height: pkg.heightCm,
+              },
+            });
+          }
+          
+          return {
+            typeCode: '2BP', // Customer provided box/package
+            weight: pkg.weightKg,
+            dimensions: {
+              length: pkg.lengthCm || 10,
+              width: pkg.widthCm || 10,
+              height: pkg.heightCm || 10,
+            },
+          };
+        }),
         isCustomsDeclarable: request.shipper.country !== request.recipient.country,
         description: 'Customer Order',
         incoterm: 'DAP', // Delivered at Place

@@ -509,7 +509,7 @@ export class WooCommerceIntegrationService {
       return response.data;
     } catch (error: any) {
       this.logger.error(`GET request failed: ${error.message}`, {
-        url,
+        url: this.sanitizeUrlForLogging(urlWithOAuth),
         status: error.response?.status,
         data: error.response?.data,
       });
@@ -560,7 +560,7 @@ export class WooCommerceIntegrationService {
       return response.data;
     } catch (error: any) {
       this.logger.error(`POST request failed: ${error.message}`, {
-        url,
+        url: this.sanitizeUrlForLogging(urlWithOAuth),
         status: error.response?.status,
         data: error.response?.data,
       });
@@ -611,7 +611,7 @@ export class WooCommerceIntegrationService {
       return response.data;
     } catch (error: any) {
       this.logger.error(`PUT request failed: ${error.message}`, {
-        url,
+        url: this.sanitizeUrlForLogging(urlWithOAuth),
         status: error.response?.status,
         data: error.response?.data,
       });
@@ -661,7 +661,7 @@ export class WooCommerceIntegrationService {
       return response.data;
     } catch (error: any) {
       this.logger.error(`DELETE request failed: ${error.message}`, {
-        url,
+        url: this.sanitizeUrlForLogging(urlWithOAuth),
         status: error.response?.status,
         data: error.response?.data,
       });
@@ -689,5 +689,22 @@ export class WooCommerceIntegrationService {
     });
 
     return urlObj.toString();
+  }
+
+  /**
+   * Sanitize URL for logging by removing OAuth signature parameters
+   */
+  private sanitizeUrlForLogging(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      // Remove sensitive OAuth parameters
+      urlObj.searchParams.delete('oauth_signature');
+      urlObj.searchParams.delete('oauth_consumer_key');
+      urlObj.searchParams.delete('oauth_token');
+      return urlObj.toString();
+    } catch (error) {
+      // If URL parsing fails, return base path only
+      return url.split('?')[0];
+    }
   }
 }
