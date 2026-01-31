@@ -11,7 +11,7 @@
         "@nestjs/passport": "*",
         "@nestjs/platform-express": "^11.1.11",
         "@nestjs/swagger": "*",
-        "@nestjs/schedule": "^6.1.0",
+        "@nestjs/schedule": "^11.0.0",
         "@nestjs/terminus": "*",
         "@nestjs/testing": "*",
         "@playwright/test": "*",
