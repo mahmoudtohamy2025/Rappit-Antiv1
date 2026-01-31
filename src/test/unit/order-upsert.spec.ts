@@ -455,14 +455,14 @@ describe('OrderUpsertService', () => {
                 new Error('Insufficient stock')
             );
 
-            await expect(service.upsertOrder(sampleOrderInput)).rejects.toThrow();
+            await expect(service.upsertOrder(sampleOrderInput)).rejects.toThrow(/Insufficient stock/);
             expect(prisma.order.create).not.toHaveBeenCalled();
         });
 
         it('should handle database connection errors', async () => {
             prisma.order.findFirst.mockRejectedValueOnce(new Error('Connection failed'));
 
-            await expect(service.upsertOrder(sampleOrderInput)).rejects.toThrow();
+            await expect(service.upsertOrder(sampleOrderInput)).rejects.toThrow(/Connection failed/);
         });
     });
 
