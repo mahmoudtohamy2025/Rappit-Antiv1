@@ -717,7 +717,9 @@ describe('TransferReservationService', () => {
                     scheduledAt: pastTime,
                     reason: 'Past scheduled',
                 }, createContext())
-            ).rejects.toThrow();
+            ).rejects.toThrow(expect.objectContaining({
+                message: expect.stringMatching(/scheduled.*future|past/i)
+            }));
         });
 
         it('should allow reschedule before execution', async () => {
@@ -1029,7 +1031,7 @@ describe('TransferReservationService', () => {
                     transferType: TransferType.PENDING,
                     reason: 'DB failure',
                 }, createContext())
-            ).rejects.toThrow();
+            ).rejects.toThrow('Connection refused');
         });
 
         it('should handle transaction failure with rollback', async () => {
@@ -1126,7 +1128,9 @@ describe('TransferReservationService', () => {
                     transferType: TransferType.PENDING,
                     reason: 'Empty ID',
                 }, createContext())
-            ).rejects.toThrow();
+            ).rejects.toThrow(expect.objectContaining({
+                message: expect.stringMatching(/reservation.*required|invalid.*reservation/i)
+            }));
         });
 
         it('should reject zero quantity', async () => {
@@ -1139,7 +1143,9 @@ describe('TransferReservationService', () => {
                     transferType: TransferType.PENDING,
                     reason: 'Zero quantity',
                 }, createContext())
-            ).rejects.toThrow();
+            ).rejects.toThrow(expect.objectContaining({
+                message: expect.stringMatching(/quantity.*greater.*zero|invalid.*quantity/i)
+            }));
         });
 
         it('should reject negative quantity', async () => {
@@ -1152,7 +1158,9 @@ describe('TransferReservationService', () => {
                     transferType: TransferType.PENDING,
                     reason: 'Negative quantity',
                 }, createContext())
-            ).rejects.toThrow();
+            ).rejects.toThrow(expect.objectContaining({
+                message: expect.stringMatching(/quantity.*positive|invalid.*quantity/i)
+            }));
         });
 
         it('should reject empty reason', async () => {
@@ -1165,7 +1173,9 @@ describe('TransferReservationService', () => {
                     transferType: TransferType.PENDING,
                     reason: '',
                 }, createContext())
-            ).rejects.toThrow();
+            ).rejects.toThrow(expect.objectContaining({
+                message: expect.stringMatching(/reason.*required|invalid.*reason/i)
+            }));
         });
 
         it('should sanitize reason text', async () => {

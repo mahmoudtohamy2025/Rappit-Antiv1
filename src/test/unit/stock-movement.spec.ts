@@ -1016,7 +1016,9 @@ describe('StockMovementService', () => {
                     type: MovementType.RECEIVE,
                     reason: 'Test',
                 }, createContext())
-            ).rejects.toThrow();
+            ).rejects.toThrow(expect.objectContaining({
+                message: expect.stringMatching(/fail|error/i)
+            }));
         });
 
         it('should rollback transaction on failure', async () => {
