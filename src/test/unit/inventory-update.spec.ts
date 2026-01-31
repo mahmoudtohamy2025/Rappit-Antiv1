@@ -850,13 +850,13 @@ describe('InventoryUpdateService', () => {
         it('should handle missing organizationId', async () => {
             await expect(
                 service.updateSingle(createUpdateItem(), { ...createContext(), organizationId: '' })
-            ).rejects.toThrow();
+            ).rejects.toThrow(/organization|required|invalid/i);
         });
 
         it('should handle missing userId', async () => {
             await expect(
                 service.updateSingle(createUpdateItem(), { ...createContext(), userId: '' })
-            ).rejects.toThrow();
+            ).rejects.toThrow(/user|required|invalid/i);
         });
 
         it('should handle very large quantities', async () => {

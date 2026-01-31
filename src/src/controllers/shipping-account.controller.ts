@@ -301,17 +301,283 @@ export class ShippingAccountController {
       };
     }
 
-    // TODO: Implement actual connection test with carrier API
-    // For MVP, return mock success
+    // Decrypt credentials
+    let credentials: any;
+    try {
+      const credentialsString = typeof account.credentials === 'string'
+        ? account.credentials
+        : JSON.stringify(account.credentials);
+      
+      // Try to decrypt, or parse as JSON if not encrypted
+      try {
+        credentials = JSON.parse(decrypt(credentialsString));
+      } catch {
+        // Credentials might not be encrypted (legacy or test mode)
+        credentials = typeof account.credentials === 'string'
+          ? JSON.parse(account.credentials)
+          : account.credentials;
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          code: 'DECRYPTION_FAILED',
+          message: 'Failed to decrypt shipping account credentials',
+        },
+      };
+    }
+
+    // Test connection based on carrier type
+    if (account.carrierType === 'DHL') {
+      return this.testDHLConnection(credentials, account.testMode);
+    } else if (account.carrierType === 'FEDEX') {
+      return this.testFedExConnection(credentials, account.testMode);
+    }
+
     return {
-      success: true,
-      data: {
-        connected: true,
-        message: 'Connection test successful (mock)',
-        carrier: account.carrierType,
-        testMode: account.testMode,
+      success: false,
+      error: {
+        code: 'UNSUPPORTED_CARRIER',
+        message: `Unsupported carrier type: ${account.carrierType}`,
       },
     };
+  }
+
+  /**
+   * Test DHL connection with real API call
+   * 
+   * Makes a request to DHL API to validate credentials.
+   * 
+   * @param credentials - Decrypted DHL credentials
+   * @param testMode - Whether to use test/sandbox environment
+   */
+  private async testDHLConnection(
+    credentials: any,
+    testMode: boolean,
+  ): Promise<any> {
+    const { apiKey, apiSecret } = credentials;
+
+    if (!apiKey || !apiSecret) {
+      return {
+        success: false,
+        error: {
+          code: 'MISSING_CREDENTIALS',
+          message: 'DHL credentials must include apiKey and apiSecret',
+        },
+      };
+    }
+
+    // DHL Express API URLs
+    const baseUrl = testMode
+      ? 'https://express.api.dhl.com/mydhlapi/test'
+      : 'https://express.api.dhl.com/mydhlapi';
+
+    // Use the address validation endpoint to test credentials
+    const endpoint = `${baseUrl}/address-validate`;
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+      // DHL uses Basic Auth with apiKey:apiSecret
+      const authString = Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
+
+      // Make a simple address validation request to test credentials
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${authString}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'delivery',
+          countryCode: 'SA',
+          postalCode: '12345',
+          cityName: 'Riyadh',
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (response.ok || response.status === 400) {
+        // 400 might be returned for invalid address data, but if we got this far,
+        // the credentials are valid (authentication passed)
+        return {
+          success: true,
+          data: {
+            connected: true,
+            message: 'Connected to DHL API successfully',
+            carrier: 'DHL',
+            testMode,
+          },
+        };
+      }
+
+      if (response.status === 401) {
+        return {
+          success: false,
+          error: {
+            code: 'AUTH_FAILED',
+            message: 'Authentication failed: Invalid DHL API credentials',
+          },
+        };
+      }
+
+      if (response.status === 403) {
+        return {
+          success: false,
+          error: {
+            code: 'AUTH_FORBIDDEN',
+            message: 'Authorization failed: DHL API credentials do not have required permissions',
+          },
+        };
+      }
+
+      return {
+        success: false,
+        error: {
+          code: 'API_ERROR',
+          message: `DHL API error: HTTP ${response.status}`,
+        },
+      };
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        return {
+          success: false,
+          error: {
+            code: 'TIMEOUT',
+            message: 'Connection timeout: DHL API did not respond in time',
+          },
+        };
+      }
+
+      return {
+        success: false,
+        error: {
+          code: 'CONNECTION_FAILED',
+          message: `Connection failed: ${error.message}`,
+        },
+      };
+    }
+  }
+
+  /**
+   * Test FedEx connection with real API call
+   * 
+   * Uses OAuth2 token endpoint to validate credentials.
+   * 
+   * @param credentials - Decrypted FedEx credentials
+   * @param testMode - Whether to use test/sandbox environment
+   */
+  private async testFedExConnection(
+    credentials: any,
+    testMode: boolean,
+  ): Promise<any> {
+    const { apiKey, apiSecret, accountNumber } = credentials;
+
+    if (!apiKey || !apiSecret) {
+      return {
+        success: false,
+        error: {
+          code: 'MISSING_CREDENTIALS',
+          message: 'FedEx credentials must include apiKey and apiSecret',
+        },
+      };
+    }
+
+    // FedEx API URLs
+    const baseUrl = testMode
+      ? 'https://apis-sandbox.fedex.com'
+      : 'https://apis.fedex.com';
+
+    // Use OAuth2 token endpoint to validate credentials
+    const tokenEndpoint = `${baseUrl}/oauth/token`;
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+      // FedEx OAuth2 uses form-urlencoded
+      const formData = new URLSearchParams();
+      formData.append('grant_type', 'client_credentials');
+      formData.append('client_id', apiKey);
+      formData.append('client_secret', apiSecret);
+
+      const response = await fetch(tokenEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
+        },
+        body: formData.toString(),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (response.ok) {
+        const tokenData = await response.json();
+        return {
+          success: true,
+          data: {
+            connected: true,
+            message: 'Connected to FedEx API successfully',
+            carrier: 'FEDEX',
+            testMode,
+            tokenScope: tokenData.scope,
+          },
+        };
+      }
+
+      if (response.status === 401) {
+        return {
+          success: false,
+          error: {
+            code: 'AUTH_FAILED',
+            message: 'Authentication failed: Invalid FedEx API credentials',
+          },
+        };
+      }
+
+      if (response.status === 403) {
+        return {
+          success: false,
+          error: {
+            code: 'AUTH_FORBIDDEN',
+            message: 'Authorization failed: FedEx API credentials do not have required permissions',
+          },
+        };
+      }
+
+      const errorData = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        error: {
+          code: 'API_ERROR',
+          message: `FedEx API error: ${errorData.error_description || `HTTP ${response.status}`}`,
+        },
+      };
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        return {
+          success: false,
+          error: {
+            code: 'TIMEOUT',
+            message: 'Connection timeout: FedEx API did not respond in time',
+          },
+        };
+      }
+
+      return {
+        success: false,
+        error: {
+          code: 'CONNECTION_FAILED',
+          message: `Connection failed: ${error.message}`,
+        },
+      };
+    }
   }
 
   // ============================================================================

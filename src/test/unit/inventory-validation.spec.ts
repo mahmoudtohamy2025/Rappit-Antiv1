@@ -472,11 +472,11 @@ describe('InventoryValidationService', () => {
         });
 
         it('should handle null input gracefully', async () => {
-            await expect(service.validate(null as any)).rejects.toThrow();
+            await expect(service.validate(null as any)).rejects.toThrow(/null|undefined|invalid|required/i);
         });
 
         it('should handle undefined input gracefully', async () => {
-            await expect(service.validate(undefined as any)).rejects.toThrow();
+            await expect(service.validate(undefined as any)).rejects.toThrow(/null|undefined|invalid|required/i);
         });
 
         it('should trim whitespace from SKU', async () => {
