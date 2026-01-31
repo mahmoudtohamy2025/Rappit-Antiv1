@@ -370,7 +370,6 @@ describe('OrderFilters', () => {
     it('should reset all filters when clear is triggered', () => {
         type Filters = { status?: string; channel?: string; startDate?: string; endDate?: string; search?: string };
         
-        const activeFilters: Filters = { status: 'PENDING', channel: 'SHOPIFY', search: 'test' };
         const clearFilters = (): Filters => ({ status: undefined, channel: undefined, startDate: undefined, endDate: undefined, search: undefined });
         
         const clearedFilters = clearFilters();
