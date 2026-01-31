@@ -49,7 +49,13 @@ function formatCardLast4(cardNumber: string): string {
 }
 
 function isValidStripeCheckoutUrl(url: string): boolean {
-    return url.includes('checkout.stripe.com') || url.includes('billing.stripe.com');
+    try {
+        const parsedUrl = new URL(url);
+        const validHosts = ['checkout.stripe.com', 'billing.stripe.com'];
+        return validHosts.includes(parsedUrl.hostname);
+    } catch {
+        return false;
+    }
 }
 
 function filterInvoicesByStatus(invoices: Invoice[], status: Invoice['status']): Invoice[] {
