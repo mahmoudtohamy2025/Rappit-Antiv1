@@ -3,6 +3,11 @@ import { PrismaService } from '@common/database/prisma.service';
 import * as crypto from 'crypto';
 
 /**
+ * Shopify API version - configurable via environment variable
+ */
+const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2024-01';
+
+/**
  * Channel Connection Service
  * 
  * Manages channel connections with secure credential storage.
@@ -396,8 +401,7 @@ export class ChannelConnectionService {
       };
     }
 
-    const apiVersion = '2024-01';
-    const url = `https://${shopDomain}/admin/api/${apiVersion}/shop.json`;
+    const url = `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/shop.json`;
 
     try {
       const controller = new AbortController();

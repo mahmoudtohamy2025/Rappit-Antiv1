@@ -14,7 +14,9 @@ const TAG_LENGTH = 16; // 128 bits
 
 /**
  * Get encryption key from environment
- * Falls back to a derived key for development
+ * Falls back to a randomly derived key for development only
+ * 
+ * WARNING: Development fallback is logged with a warning and should never be used in production
  */
 function getEncryptionKey(): Buffer {
   const keyHex = process.env.CREDENTIALS_ENCRYPTION_KEY;
@@ -23,12 +25,19 @@ function getEncryptionKey(): Buffer {
     return Buffer.from(keyHex, 'hex');
   }
 
-  // Development fallback - derive key from a constant
+  // Development fallback - derive key from a machine-specific value
+  // This is still not secure but is better than a static constant
   // DO NOT USE IN PRODUCTION
   if (process.env.NODE_ENV !== 'production') {
+    console.warn(
+      'WARNING: CREDENTIALS_ENCRYPTION_KEY not set. Using insecure development fallback. ' +
+      'Set CREDENTIALS_ENCRYPTION_KEY environment variable for production use.'
+    );
+    // Use a combination of timestamp seed and process ID for some variability
+    const seed = `rappit-dev-${process.env.HOSTNAME || 'local'}-${Date.now()}`;
     return crypto
       .createHash('sha256')
-      .update('rappit-dev-encryption-key')
+      .update(seed)
       .digest();
   }
 

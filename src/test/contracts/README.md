@@ -52,7 +52,7 @@ These files can be published to a Pact Broker for provider verification.
 To verify that external APIs still match the contract:
 
 1. Set up a Pact Broker
-2. Publish contracts: `npx pact-broker publish ./pacts --consumer-app-version=$(git rev-parse HEAD)`
+2. Publish contracts: `npx pact-broker publish ./pacts --broker-base-url=<your-broker-url> --consumer-app-version=$(git rev-parse HEAD)`
 3. Providers can then verify against these contracts
 
 ## Adding New Contract Tests
