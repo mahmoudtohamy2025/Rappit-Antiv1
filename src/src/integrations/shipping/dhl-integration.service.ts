@@ -583,17 +583,22 @@ startxref
         lastError = error;
         const axiosError = error as AxiosError;
         const statusCode = axiosError.response?.status;
+        const errorCode = axiosError.code;
+        const isTimeoutError =
+          errorCode === 'ECONNABORTED' || errorCode === 'ETIMEDOUT';
 
         this.logger.warn(`HTTP POST failed (attempt ${attempt}/${maxRetries})`, {
           url,
           status: statusCode,
           error: axiosError.message,
+          code: errorCode,
           correlationId,
         });
 
-        // Retry on 429 (rate limit), 500, 502, 503, 504 (server errors)
-        const shouldRetry = 
-          statusCode === 429 || 
+        // Retry on timeouts, 429 (rate limit), 500, 502, 503, 504 (server errors)
+        const shouldRetry =
+          isTimeoutError ||
+          statusCode === 429 ||
           (statusCode && statusCode >= 500 && statusCode <= 504);
 
         if (!shouldRetry || attempt === maxRetries) {
