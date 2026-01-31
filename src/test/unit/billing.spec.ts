@@ -28,10 +28,9 @@ interface Invoice {
 }
 
 // Billing utility functions under test
-function calculateTrialDaysRemaining(trialEndsAt: string | null): number {
+function calculateTrialDaysRemaining(trialEndsAt: string | null, now: Date = new Date()): number {
     if (!trialEndsAt) return 0;
     const endDate = new Date(trialEndsAt);
-    const now = new Date();
     const diffTime = endDate.getTime() - now.getTime();
     return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 }
@@ -160,19 +159,18 @@ describe('CurrentPlanCard', () => {
     });
 
     it('should calculate trial days remaining correctly', () => {
-        const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + 7);
+        const now = new Date('2026-01-31T12:00:00Z');
+        const trialEndsAt = '2026-02-07T12:00:00Z'; // 7 days from now
         
-        const trialDays = calculateTrialDaysRemaining(futureDate.toISOString());
-        expect(trialDays).toBeGreaterThanOrEqual(6);
-        expect(trialDays).toBeLessThanOrEqual(8);
+        const trialDays = calculateTrialDaysRemaining(trialEndsAt, now);
+        expect(trialDays).toBe(7);
     });
 
     it('should return 0 for expired trial', () => {
-        const pastDate = new Date();
-        pastDate.setDate(pastDate.getDate() - 5);
+        const now = new Date('2026-01-31T12:00:00Z');
+        const pastDate = '2026-01-26T12:00:00Z'; // 5 days ago
         
-        const trialDays = calculateTrialDaysRemaining(pastDate.toISOString());
+        const trialDays = calculateTrialDaysRemaining(pastDate, now);
         expect(trialDays).toBe(0);
     });
 

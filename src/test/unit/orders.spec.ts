@@ -8,8 +8,8 @@
  * These tests verify actual order filtering, validation, and business logic.
  */
 
-// Order types
-type OrderStatus = 'NEW' | 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+// Order types - aligned with backend order-state-machine.ts
+type OrderStatus = 'NEW' | 'RESERVED' | 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'FAILED';
 type Channel = 'SHOPIFY' | 'WOOCOMMERCE' | 'MANUAL';
 
 interface Order {
@@ -102,10 +102,16 @@ function sortTimelineByDate(events: TimelineEvent[]): TimelineEvent[] {
     );
 }
 
+/**
+ * Valid state transitions matching backend order-state-machine.ts
+ * Flow: PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED
+ * Cancellation allowed from: PENDING, CONFIRMED, PROCESSING (not SHIPPED)
+ */
 function isValidStatusTransition(from: OrderStatus, to: OrderStatus): boolean {
     const validTransitions: Record<OrderStatus, OrderStatus[]> = {
-        'NEW': ['PROCESSING', 'CANCELLED'],
-        'PENDING': ['PROCESSING', 'CANCELLED'],
+        'NEW': ['RESERVED', 'CANCELLED', 'FAILED'],
+        'PENDING': ['CONFIRMED', 'CANCELLED'],
+        'CONFIRMED': ['PROCESSING', 'CANCELLED'],
         'PROCESSING': ['SHIPPED', 'CANCELLED'],
         'SHIPPED': ['DELIVERED'],
         'DELIVERED': [],
@@ -229,21 +235,45 @@ describe('useOrders Hook', () => {
     });
 
     describe('bulkUpdateStatus', () => {
-        it('should validate status transition is allowed', () => {
-            expect(isValidStatusTransition('PENDING', 'PROCESSING')).toBe(true);
+        it('should validate status transition is allowed per state machine', () => {
+            // Valid transitions per order-state-machine.ts
+            expect(isValidStatusTransition('PENDING', 'CONFIRMED')).toBe(true);
+            expect(isValidStatusTransition('CONFIRMED', 'PROCESSING')).toBe(true);
             expect(isValidStatusTransition('PROCESSING', 'SHIPPED')).toBe(true);
             expect(isValidStatusTransition('SHIPPED', 'DELIVERED')).toBe(true);
         });
         
         it('should reject invalid status transitions', () => {
+            // Cannot skip states
+            expect(isValidStatusTransition('PENDING', 'PROCESSING')).toBe(false);
+            expect(isValidStatusTransition('PENDING', 'SHIPPED')).toBe(false);
+            // Cannot go backwards
             expect(isValidStatusTransition('DELIVERED', 'SHIPPED')).toBe(false);
-            expect(isValidStatusTransition('CANCELLED', 'PROCESSING')).toBe(false);
             expect(isValidStatusTransition('SHIPPED', 'PROCESSING')).toBe(false);
+            // Cannot transition from terminal states
+            expect(isValidStatusTransition('CANCELLED', 'PROCESSING')).toBe(false);
+            expect(isValidStatusTransition('DELIVERED', 'CANCELLED')).toBe(false);
         });
 
-        it('should require at least one order to update', () => {
-            const orderIds: string[] = [];
-            expect(orderIds.length > 0).toBe(false);
+        it('should validate bulk update requires non-empty orderIds array', () => {
+            interface BulkUpdateDto {
+                orderIds: string[];
+                status: OrderStatus;
+            }
+            
+            function validateBulkUpdate(dto: BulkUpdateDto): { valid: boolean; error?: string } {
+                if (!dto.orderIds || dto.orderIds.length === 0) {
+                    return { valid: false, error: 'At least one order ID is required' };
+                }
+                return { valid: true };
+            }
+            
+            const emptyResult = validateBulkUpdate({ orderIds: [], status: 'CONFIRMED' });
+            expect(emptyResult.valid).toBe(false);
+            expect(emptyResult.error).toBe('At least one order ID is required');
+            
+            const validResult = validateBulkUpdate({ orderIds: ['order-1'], status: 'CONFIRMED' });
+            expect(validResult.valid).toBe(true);
         });
     });
 

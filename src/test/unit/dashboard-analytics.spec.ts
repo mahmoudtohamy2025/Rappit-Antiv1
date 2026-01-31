@@ -98,11 +98,6 @@ describe('useDashboardAnalytics Hook', () => {
         delivered: 30,
     };
 
-    const mockTopProducts: Product[] = [
-        { id: 'p1', name: 'منتج A', sold: 120, revenue: 24000 },
-        { id: 'p2', name: 'منتج B', sold: 95, revenue: 19000 },
-    ];
-
     describe('getAnalytics', () => {
         it('should correctly calculate average order value from revenue and count', () => {
             const avgOrderValue = calculateAverageOrderValue(mockAnalytics.totalRevenue, mockAnalytics.orderCount);
