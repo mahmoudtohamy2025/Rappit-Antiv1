@@ -369,7 +369,7 @@ PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED
 
 ### 10. Products
 
-**Status:** Complete (but module NOT imported)  
+**Status:** Unreachable (module NOT imported in app.module.ts)  
 **Files:** `/src/src/modules/products/`
 
 | Feature | Implementation | Evidence |
@@ -627,14 +627,22 @@ API POST /shipments → ShippingController.create()
 |----------|------------|----------|
 | inventory.service.ts:reserveStockForOrder() | MAX_INVENTORY_QUANTITY = 1,000,000 | Check before incrementing reserved |
 
-### Schema-Code Inconsistencies
+### Schema-Code Inconsistencies (CRITICAL)
 
 | Entity | Schema States | Code States |
 |--------|---------------|-------------|
 | OrderStatus (Prisma) | NEW, RESERVED, PAID, READY_TO_SHIP, PICKED, PACKED, SHIPPED, IN_TRANSIT, DELIVERED, CANCELLED, RETURNED | - |
 | OrderStatus (Code) | PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED | - |
 
-**Risk:** State machine code uses different enum values than Prisma schema.
+**CRITICAL RISK:** State machine code (`/src/src/modules/orders/order-state-machine.ts`) uses enum values (PENDING, CONFIRMED, PROCESSING) that do not exist in the Prisma schema (`/prisma/schema.prisma`). The Prisma schema defines OrderStatus with completely different values (NEW, RESERVED, PAID, etc.). This mismatch means:
+
+1. Orders created with Prisma-defined states (e.g., NEW, RESERVED) will fail state machine validation
+2. State transitions may throw errors or produce undefined behavior
+3. Orders in states like PAID, READY_TO_SHIP, PICKED, PACKED, IN_TRANSIT, RETURNED cannot be processed by the state machine
+
+**Verification:** Compare:
+- `/src/src/modules/orders/order-state-machine.ts` lines 24-31 (code enum)
+- `/prisma/schema.prisma` lines 398-411 (schema enum)
 
 ---
 
