@@ -1,5 +1,6 @@
 import * as crypto from 'crypto';
 import { Logger } from '@nestjs/common';
+import axios from 'axios';
 
 /**
  * OAuth Flow Helpers
@@ -11,6 +12,9 @@ import { Logger } from '@nestjs/common';
  */
 
 const logger = new Logger('OAuthHelpers');
+
+// Shopify API version constant
+const SHOPIFY_API_VERSION = '2024-01';
 
 // ============================================================================
 // SHOPIFY OAUTH FLOW
@@ -125,8 +129,6 @@ export async function exchangeShopifyCode(
   logger.log(`Exchanging code for access token: ${shopDomain}`);
 
   try {
-    const axios = require('axios');
-    
     const response = await axios.post(
       `https://${shopDomain}/admin/oauth/access_token`,
       {
@@ -254,14 +256,13 @@ export async function registerShopifyWebhooks(
 ): Promise<{ registered: number; failed: number }> {
   logger.log(`Registering ${webhooks.length} Shopify webhooks for ${shopDomain}`);
 
-  const axios = require('axios');
   let registered = 0;
   let failed = 0;
 
   for (const webhook of webhooks) {
     try {
       const response = await axios.post(
-        `https://${shopDomain}/admin/api/2024-01/webhooks.json`,
+        `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/webhooks.json`,
         {
           webhook: {
             topic: webhook.topic,
@@ -371,7 +372,6 @@ export async function registerWooCommerceWebhooks(
 ): Promise<{ registered: number; failed: number }> {
   logger.log(`Registering ${webhooks.length} WooCommerce webhooks for ${siteUrl}`);
 
-  const axios = require('axios');
   let registered = 0;
   let failed = 0;
 

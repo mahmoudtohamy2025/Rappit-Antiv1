@@ -2,6 +2,7 @@ import { Injectable, Logger, NotImplementedException } from '@nestjs/common';
 import { PrismaService } from '@common/database/prisma.service';
 import { CreateOrderFromChannelDto } from '@modules/orders/dto/create-order-from-channel.dto';
 import { createOAuth1Signature } from './oauth1-helper';
+import axios from 'axios';
 
 /**
  * WooCommerce Integration Service
@@ -485,8 +486,6 @@ export class WooCommerceIntegrationService {
   ): Promise<any> {
     this.logger.debug(`GET ${url}`);
 
-    const axios = require('axios');
-
     try {
       // Generate OAuth1 signature
       const oauthParams = createOAuth1Signature(
@@ -537,8 +536,6 @@ export class WooCommerceIntegrationService {
     data: any,
   ): Promise<any> {
     this.logger.debug(`POST ${url}`);
-
-    const axios = require('axios');
 
     try {
       // Generate OAuth1 signature for the base URL (without body)
@@ -591,8 +588,6 @@ export class WooCommerceIntegrationService {
   ): Promise<any> {
     this.logger.debug(`PUT ${url}`);
 
-    const axios = require('axios');
-
     try {
       // Generate OAuth1 signature
       const oauthParams = createOAuth1Signature(
@@ -642,8 +637,6 @@ export class WooCommerceIntegrationService {
     consumerSecret: string,
   ): Promise<any> {
     this.logger.debug(`DELETE ${url}`);
-
-    const axios = require('axios');
 
     try {
       // Generate OAuth1 signature
