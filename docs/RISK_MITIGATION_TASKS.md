@@ -12,9 +12,134 @@
 |----------|------------|----------------|
 | Immediate Actions (Before Production) | 6 | P0-P1 |
 | Structural Fixes (Require Code Changes) | 8 | P0-P2 |
-| Test Strategy Adjustments | 5 | P1-P2 |
+| Test Strategy Adjustments | 4 | P1-P2 |
 | Production Safety Gates | 7 | Blocking/Conditional/Warning |
 | Deployment Prerequisites | 4 | Mandatory |
+
+---
+
+## 🔄 Task Execution Guide: Parallelization Analysis
+
+### Can First 4 Tasks Run in Parallel?
+
+**Short Answer: YES - with conditions**
+
+The first 4 immediate action tasks have the following dependency structure:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     PARALLEL EXECUTION MAP                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────┐    ┌──────────────┐                           │
+│  │  TASK-001    │    │  TASK-002    │  ← Can run in parallel    │
+│  │  Prisma Gen  │    │  @nestjs/    │                           │
+│  │  (CI/CD)     │    │  schedule    │                           │
+│  └──────┬───────┘    └──────┬───────┘                           │
+│         │                   │                                    │
+│         └─────────┬─────────┘                                    │
+│                   │                                              │
+│                   ▼                                              │
+│         ┌─────────────────┐                                      │
+│         │    TASK-004     │  ← Depends on TASK-001 + TASK-002   │
+│         │ Replace Placeholder                                    │
+│         │ Test Assertions │                                      │
+│         └─────────────────┘                                      │
+│                                                                  │
+│  ┌──────────────┐                                               │
+│  │  TASK-003    │  ← FULLY INDEPENDENT - can run anytime       │
+│  │  Multi-Tenant │                                               │
+│  │  Verification │                                               │
+│  └──────────────┘                                               │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Dependency Analysis
+
+| Task | Dependencies | Can Parallelize With |
+|------|--------------|---------------------|
+| **TASK-001** (Prisma Generate) | None | TASK-002, TASK-003 |
+| **TASK-002** (@nestjs/schedule) | None | TASK-001, TASK-003 |
+| **TASK-003** (Multi-Tenant Verification) | None (manual task) | TASK-001, TASK-002, TASK-004 |
+| **TASK-004** (Replace Placeholders) | TASK-001 (tests must run first) | TASK-003 |
+
+### Recommended Execution Strategy
+
+#### Option A: Maximum Parallelization (3 agents)
+```
+Agent 1: TASK-001 (Prisma Generate) + TASK-004 (after 001 completes)
+Agent 2: TASK-002 (@nestjs/schedule)  
+Agent 3: TASK-003 (Multi-Tenant Verification)
+```
+
+#### Option B: Two-Phase Approach (2 agents)
+```
+Phase 1 (Parallel):
+  - Agent 1: TASK-001 + TASK-002 (both CI/infra changes)
+  - Agent 2: TASK-003 (manual verification)
+
+Phase 2 (After Phase 1):
+  - Agent 1: TASK-004 (now tests can run)
+```
+
+#### Option C: Sequential (1 agent - safest)
+```
+TASK-001 → TASK-002 → verify tests run → TASK-004 → TASK-003
+```
+
+### Why TASK-004 Has Dependencies
+
+TASK-004 (Replace Placeholder Assertions) requires:
+1. **TASK-001 completed**: Tests must initialize (Prisma client needed)
+2. **TASK-002 completed**: All test files must load (tracking-scheduler needs @nestjs/schedule)
+
+Without these, you cannot:
+- Run the tests to verify assertion changes work
+- Know which assertions need replacement (some may be in failing suites)
+
+### TASK-003 Is Fully Independent
+
+TASK-003 (Multi-Tenant Verification) is a **manual code review task** that:
+- Does not require tests to run
+- Does not modify any code
+- Can be done while other agents work on CI/dependency fixes
+
+---
+
+## Execution Commands for Multi-Agent
+
+### Agent 1: Infrastructure (TASK-001 + TASK-002)
+```bash
+# TASK-001: Generate Prisma Client
+cd /home/runner/work/Rappit-Antiv1/Rappit-Antiv1/src
+npx prisma generate
+
+# TASK-002: Add @nestjs/schedule
+npm install --save-dev @nestjs/schedule
+
+# Verify both completed
+npm run test -- --listTests 2>&1 | head -20
+```
+
+### Agent 2: Multi-Tenant Verification (TASK-003)
+```bash
+# Review organization scoping in services
+grep -r "organizationId" src/src/modules --include="*.service.ts" | head -50
+
+# Review all Prisma queries for org scoping
+grep -r "where:" src/src/modules --include="*.ts" -A2 | head -100
+```
+
+### Agent 3: Test Assertion Fixes (TASK-004) - After Agents 1 & 2
+```bash
+# Find placeholder assertions
+grep -rn "expect(true).toBe(true)" src/test/unit
+grep -rn "expect(.*).toBe(true)" src/test/unit | head -30
+
+# Run tests to find failures
+npm run test:unit -- --runInBand 2>&1 | tail -50
+```
 
 ---
 
