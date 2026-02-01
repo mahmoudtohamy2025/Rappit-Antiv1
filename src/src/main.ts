@@ -5,9 +5,20 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { validateCorsConfig, getCorsConfig } from './middleware/cors.middleware';
+import { ProductionSafetyCheck, StagingSafetyCheck } from './utils/production-safety-check';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
+  // Production Safety Gates - Validate before starting
+  try {
+    ProductionSafetyCheck.validateProduction();
+    StagingSafetyCheck.validateStaging();
+  } catch (error) {
+    logger.error(`🚨 Production Safety Check Failed: ${error.message}`);
+    logger.error('See docs/PRODUCTION_SAFETY_GATES.md for resolution steps');
+    process.exit(1);
+  }
 
   // Validate CORS configuration before starting (fails fast in production if misconfigured)
   try {
@@ -62,6 +73,9 @@ async function bootstrap() {
   logger.log(`🚀 Rappit backend running on: http://localhost:${port}/${apiPrefix}`);
   logger.log(`📚 API Documentation: http://localhost:${port}/api/docs`);
   logger.log(`❤️  Health check: http://localhost:${port}/${apiPrefix}/health`);
+  
+  // Log production warnings after startup
+  ProductionSafetyCheck.logProductionWarnings();
 }
 
 bootstrap();

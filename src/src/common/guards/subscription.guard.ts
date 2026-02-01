@@ -12,6 +12,7 @@ import {
     REQUIRES_SUBSCRIPTION_KEY,
     ALLOW_BILLING_KEY,
 } from '@common/decorators/subscription.decorator';
+import { MetricsService } from '@common/metrics/metrics.service';
 
 /**
  * SubscriptionGuard (BILL-03)
@@ -28,6 +29,8 @@ import {
  * | CANCELLED  | ✅         | ❌                            |
  * 
  * CRITICAL: This guard NEVER modifies data. It only gates access.
+ * 
+ * GATE-006: Records metrics for subscription enforcement monitoring.
  */
 @Injectable()
 export class SubscriptionGuard implements CanActivate {
@@ -46,6 +49,7 @@ export class SubscriptionGuard implements CanActivate {
     constructor(
         private reflector: Reflector,
         private prisma: PrismaService,
+        private metricsService: MetricsService,
     ) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -118,6 +122,13 @@ export class SubscriptionGuard implements CanActivate {
         this.logger.warn(
             `Blocked write operation for organization ${organization.name} ` +
             `(${organizationId}) with status ${status}. Method: ${method}, Path: ${request.path}`,
+        );
+
+        // Record metric for monitoring (GATE-006)
+        this.metricsService.recordSubscriptionBlock(
+            organizationId,
+            status,
+            request.path,
         );
 
         // Block with clear message

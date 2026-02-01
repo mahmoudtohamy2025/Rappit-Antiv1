@@ -11,6 +11,7 @@ import { HealthModule } from './common/health/health.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { RateLimitModule } from './common/rate-limit';
+import { MetricsModule } from './common/metrics/metrics.module';
 
 // Modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -41,6 +42,7 @@ import { BillingModule } from './modules/billing/billing.module';
     }),
     DatabaseModule,
     RateLimitModule,
+    MetricsModule,
     HealthModule,
     JobsModule,
     AuthModule,

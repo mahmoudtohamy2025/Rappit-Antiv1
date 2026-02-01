@@ -71,7 +71,7 @@ jobs:
               run: npm ci
 
             - name: Generate Prisma Client
-              run: npx prisma generate
+              run: npx prisma@5.22.0 generate
               working-directory: ./src
 
             - name: Run TypeScript check
@@ -97,7 +97,7 @@ jobs:
               run: npm ci
 
             - name: Generate Prisma Client
-              run: npx prisma generate
+              run: npx prisma@5.22.0 generate
               working-directory: ./src
 
             - name: Run unit tests
@@ -150,11 +150,11 @@ jobs:
               run: npm ci
 
             - name: Generate Prisma Client
-              run: npx prisma generate
+              run: npx prisma@5.22.0 generate
               working-directory: ./src
 
             - name: Run database migrations
-              run: npx prisma migrate deploy
+              run: npx prisma@5.22.0 migrate deploy
               working-directory: ./src
               env:
                   DATABASE_URL: postgresql://rappit_test:rappit_test_pass@localhost:5433/rappit_test
@@ -207,11 +207,11 @@ jobs:
               run: npm ci
 
             - name: Generate Prisma Client
-              run: npx prisma generate
+              run: npx prisma@5.22.0 generate
               working-directory: ./src
 
             - name: Run database migrations
-              run: npx prisma migrate deploy
+              run: npx prisma@5.22.0 migrate deploy
               working-directory: ./src
               env:
                   DATABASE_URL: postgresql://rappit_test:rappit_test_pass@localhost:5433/rappit_test
@@ -237,7 +237,7 @@ jobs:
                   files: ./coverage/lcov.info
                   fail_ci_if_error: false
 
-    # ===========================================================================
+    # ====================================================================
     # Security Scan
     # ===========================================================================
     security:
@@ -265,3 +265,4 @@ jobs:
               continue-on-error: true
               env:
                   SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
