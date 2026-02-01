@@ -204,8 +204,9 @@ docker run -d \
   rappit:latest
 ```
 
-Or using Kubernetes:
+Or using Kubernetes (configure k8s deployment files for your environment):
 ```bash
+# Example - adjust paths and configuration for your setup
 kubectl apply -f k8s/deployment.yaml
 ```
 
