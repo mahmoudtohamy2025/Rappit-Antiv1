@@ -9,6 +9,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { RateLimitService, RateLimitConfig } from './rate-limit.service';
 import { RATE_LIMIT_CONFIGS } from './rate-limit.constants';
+import { MetricsService } from '@common/metrics/metrics.service';
 
 /**
  * Rate Limit Type Decorator Key
@@ -32,6 +33,7 @@ export enum RateLimitType {
  * Rate Limit Guard
  * 
  * SEC-02: Applies rate limiting to endpoints
+ * GATE-007: Records metrics for rate limiting observability
  * 
  * Usage:
  * @RateLimit(RateLimitType.AUTH_IP)
@@ -45,6 +47,7 @@ export class RateLimitGuard implements CanActivate {
     constructor(
         private readonly reflector: Reflector,
         private readonly rateLimitService: RateLimitService,
+        private readonly metricsService: MetricsService,
     ) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -76,6 +79,23 @@ export class RateLimitGuard implements CanActivate {
         // Check rate limit
         const result = await this.rateLimitService.checkRateLimit(config, identifier);
 
+        // Record metrics (GATE-007)
+        const organizationId = request.user?.organizationId;
+        const endpoint = request.path;
+        
+        this.metricsService.recordRateLimitHit(
+            rateLimitType,
+            organizationId,
+            endpoint,
+        );
+        
+        this.metricsService.updateRateLimitRemaining(
+            rateLimitType,
+            result.remaining,
+            organizationId,
+            endpoint,
+        );
+
         // Set rate limit headers
         response.setHeader('X-RateLimit-Limit', config.limit);
         response.setHeader('X-RateLimit-Remaining', result.remaining);
@@ -84,6 +104,13 @@ export class RateLimitGuard implements CanActivate {
 
         if (!result.allowed) {
             response.setHeader('Retry-After', result.retryAfterSeconds);
+
+            // Record block metric (GATE-007)
+            this.metricsService.recordRateLimitBlock(
+                rateLimitType,
+                organizationId,
+                endpoint,
+            );
 
             throw new HttpException(
                 {
