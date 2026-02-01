@@ -108,7 +108,11 @@
         "test:unit": "jest src/test/unit --runInBand --config src/jest.config.js",
         "test:frontend": "jest --config jest.config.frontend.js --runInBand",
         "test:integration": "jest src/test/integration --runInBand --config src/jest.config.js",
-        "test:e2e": "jest src/test --testPathPattern=\\.e2e-spec\\.ts$ --runInBand --detectOpenHandles --config src/jest.config.js",
+        "test:e2e": "USE_TESTCONTAINERS=true jest src/test/e2e --runInBand --detectOpenHandles --config src/jest.config.js",
+        "test:e2e:containers": "USE_TESTCONTAINERS=true jest src/test/e2e --runInBand --detectOpenHandles --config src/jest.config.js",
+        "test:e2e:lifecycle": "USE_TESTCONTAINERS=true jest src/test/e2e/order-lifecycle.e2e-spec.ts --runInBand --config src/jest.config.js",
+        "test:e2e:security": "USE_TESTCONTAINERS=true jest src/test/e2e/security-tenant-isolation.e2e-spec.ts --runInBand --config src/jest.config.js",
+        "test:e2e:chaos": "USE_TESTCONTAINERS=true jest src/test/e2e/chaos-engineering.e2e-spec.ts --runInBand --config src/jest.config.js",
         "test:multi-tenant": "jest src/test/integration/multi-tenant.e2e-spec.ts --runInBand --detectOpenHandles --config src/jest.config.js",
         "test:coverage": "jest --coverage --runInBand --config src/jest.config.js",
         "test:ci": "jest --ci --coverage --maxWorkers=2 --config src/jest.config.js"
