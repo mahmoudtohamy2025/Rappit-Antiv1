@@ -7,8 +7,8 @@ import {
     Logger,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RateLimitService, RateLimitConfig } from './rate-limit.service';
-import { RATE_LIMIT_CONFIGS } from './rate-limit.constants';
+import { RateLimitService } from './rate-limit.service';
+import { RATE_LIMIT_CONFIGS, RateLimitConfig } from './rate-limit.constants';
 import { MetricsService } from '@common/metrics/metrics.service';
 
 /**

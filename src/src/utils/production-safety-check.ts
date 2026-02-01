@@ -156,7 +156,7 @@ export class ProductionSafetyCheck {
  */
 export class StagingSafetyCheck {
   static validateStaging(): void {
-    const env = process.env.NODE_ENV;
+    const env = process.env.NODE_ENV as string;
     
     if (env !== 'staging') {
       return;
