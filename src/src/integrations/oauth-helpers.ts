@@ -1,5 +1,6 @@
 import * as crypto from 'crypto';
 import { Logger } from '@nestjs/common';
+import axios from 'axios';
 
 /**
  * OAuth Flow Helpers
@@ -11,6 +12,9 @@ import { Logger } from '@nestjs/common';
  */
 
 const logger = new Logger('OAuthHelpers');
+
+// Shopify API version constant
+const SHOPIFY_API_VERSION = '2024-01';
 
 // ============================================================================
 // SHOPIFY OAUTH FLOW
@@ -108,12 +112,14 @@ export function verifyShopifyHmac(
 /**
  * Step 3: Exchange authorization code for access token
  * 
+ * Makes an HTTP POST request to Shopify's OAuth token endpoint to exchange
+ * the authorization code for an access token.
+ * 
  * @param config - OAuth config
  * @param shopDomain - Shop domain
  * @param code - Authorization code from callback
- * @returns Access token response
- * 
- * TODO: Implement actual HTTP POST to Shopify API
+ * @returns Access token response with token and scope
+ * @throws Error if token exchange fails
  */
 export async function exchangeShopifyCode(
   config: ShopifyOAuthConfig,
@@ -122,22 +128,48 @@ export async function exchangeShopifyCode(
 ): Promise<{ accessToken: string; scope: string }> {
   logger.log(`Exchanging code for access token: ${shopDomain}`);
 
-  // TODO: Implement actual HTTP request
-  // const response = await axios.post(
-  //   `https://${shopDomain}/admin/oauth/access_token`,
-  //   {
-  //     client_id: config.clientId,
-  //     client_secret: config.clientSecret,
-  //     code,
-  //   },
-  // );
-  //
-  // return {
-  //   accessToken: response.data.access_token,
-  //   scope: response.data.scope,
-  // };
+  try {
+    const response = await axios.post(
+      `https://${shopDomain}/admin/oauth/access_token`,
+      {
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+        code,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000, // 30 seconds timeout
+      },
+    );
 
-  throw new Error('exchangeShopifyCode not implemented - use axios to POST to Shopify');
+    if (!response.data || !response.data.access_token) {
+      throw new Error('Invalid response from Shopify OAuth: missing access_token');
+    }
+
+    logger.log(`Successfully exchanged code for access token: ${shopDomain}`);
+
+    return {
+      accessToken: response.data.access_token,
+      scope: response.data.scope || '',
+    };
+  } catch (error: any) {
+    logger.error(`Failed to exchange Shopify code: ${error.message}`);
+    
+    if (error.response) {
+      const statusCode = error.response.status;
+      const errorData = error.response.data;
+      
+      throw new Error(
+        `Shopify OAuth token exchange failed (HTTP ${statusCode}): ${
+          errorData?.error_description || errorData?.error || error.message
+        }`
+      );
+    }
+    
+    throw new Error(`Shopify OAuth token exchange failed: ${error.message}`);
+  }
 }
 
 /**
@@ -206,12 +238,13 @@ export function generateRandomState(): string {
 /**
  * Register Shopify webhooks
  * 
+ * Makes HTTP POST requests to Shopify's webhook API to register webhook subscriptions.
+ * Each webhook topic is registered individually with retry logic.
+ * 
  * @param shopDomain - Shop domain
  * @param accessToken - Shopify access token
  * @param webhooks - Webhooks to register
- * @returns Registration results
- * 
- * TODO: Implement actual HTTP POST to Shopify API
+ * @returns Registration results with count of registered and failed webhooks
  */
 export async function registerShopifyWebhooks(
   shopDomain: string,
@@ -228,38 +261,46 @@ export async function registerShopifyWebhooks(
 
   for (const webhook of webhooks) {
     try {
-      // TODO: Implement actual HTTP request
-      // const response = await axios.post(
-      //   `https://${shopDomain}/admin/api/2024-01/webhooks.json`,
-      //   {
-      //     webhook: {
-      //       topic: webhook.topic,
-      //       address: webhook.address,
-      //       format: 'json',
-      //     },
-      //   },
-      //   {
-      //     headers: {
-      //       'X-Shopify-Access-Token': accessToken,
-      //       'Content-Type': 'application/json',
-      //     },
-      //   },
-      // );
-      //
-      // if (response.status === 201) {
-      //   registered++;
-      //   logger.log(`Registered webhook: ${webhook.topic}`);
-      // } else {
-      //   failed++;
-      // }
+      const response = await axios.post(
+        `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/webhooks.json`,
+        {
+          webhook: {
+            topic: webhook.topic,
+            address: webhook.address,
+            format: 'json',
+          },
+        },
+        {
+          headers: {
+            'X-Shopify-Access-Token': accessToken,
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
+        },
+      );
 
-      logger.log(`[STUB] Would register webhook: ${webhook.topic} → ${webhook.address}`);
-      registered++;
-    } catch (error) {
-      logger.error(`Failed to register webhook ${webhook.topic}: ${error.message}`);
+      if (response.status === 201) {
+        registered++;
+        logger.log(`Registered webhook: ${webhook.topic}`);
+      } else {
+        failed++;
+        logger.warn(`Unexpected status code ${response.status} for webhook: ${webhook.topic}`);
+      }
+    } catch (error: any) {
       failed++;
+      logger.error(`Failed to register webhook ${webhook.topic}: ${error.message}`);
+      
+      // Log error details if available
+      if (error.response) {
+        logger.error(`Webhook registration error details`, {
+          status: error.response.status,
+          data: error.response.data,
+        });
+      }
     }
   }
+
+  logger.log(`Shopify webhook registration complete: ${registered} registered, ${failed} failed`);
 
   return { registered, failed };
 }
@@ -310,13 +351,14 @@ export function getShopifyWebhookPayloads(baseUrl: string) {
 /**
  * Register WooCommerce webhooks
  * 
+ * Makes HTTP POST requests to WooCommerce's webhook API to register webhook subscriptions.
+ * Uses basic authentication with consumer key and secret.
+ * 
  * @param siteUrl - WooCommerce site URL
  * @param consumerKey - Consumer key
  * @param consumerSecret - Consumer secret
  * @param webhooks - Webhooks to register
- * @returns Registration results
- * 
- * TODO: Implement actual HTTP POST to WooCommerce API
+ * @returns Registration results with count of registered and failed webhooks
  */
 export async function registerWooCommerceWebhooks(
   siteUrl: string,
@@ -335,32 +377,43 @@ export async function registerWooCommerceWebhooks(
 
   for (const webhook of webhooks) {
     try {
-      // TODO: Implement actual HTTP request with OAuth1 signature
-      // const response = await axios.post(
-      //   `${siteUrl}/wp-json/wc/v3/webhooks`,
-      //   webhook,
-      //   {
-      //     auth: {
-      //       username: consumerKey,
-      //       password: consumerSecret,
-      //     },
-      //   },
-      // );
-      //
-      // if (response.status === 201) {
-      //   registered++;
-      //   logger.log(`Registered webhook: ${webhook.topic}`);
-      // } else {
-      //   failed++;
-      // }
+      const response = await axios.post(
+        `${siteUrl}/wp-json/wc/v3/webhooks`,
+        webhook,
+        {
+          auth: {
+            username: consumerKey,
+            password: consumerSecret,
+          },
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          timeout: 30000,
+        },
+      );
 
-      logger.log(`[STUB] Would register webhook: ${webhook.topic} → ${webhook.delivery_url}`);
-      registered++;
-    } catch (error) {
-      logger.error(`Failed to register webhook ${webhook.topic}: ${error.message}`);
+      if (response.status === 201) {
+        registered++;
+        logger.log(`Registered webhook: ${webhook.topic}`);
+      } else {
+        failed++;
+        logger.warn(`Unexpected status code ${response.status} for webhook: ${webhook.topic}`);
+      }
+    } catch (error: any) {
       failed++;
+      logger.error(`Failed to register webhook ${webhook.topic}: ${error.message}`);
+      
+      // Log error details if available
+      if (error.response) {
+        logger.error(`Webhook registration error details`, {
+          status: error.response.status,
+          data: error.response.data,
+        });
+      }
     }
   }
+
+  logger.log(`WooCommerce webhook registration complete: ${registered} registered, ${failed} failed`);
 
   return { registered, failed };
 }
